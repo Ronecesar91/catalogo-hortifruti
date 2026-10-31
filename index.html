@@ -599,7 +599,7 @@
             </div>
             <div>
               <label class="block text-xs font-semibold text-stone-600 mb-1">WhatsApp de Recebimento (com DDD)</label>
-              <input type="text" id="adminWhatsApp" placeholder="5511999999999" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
+              <input type="text" id="adminWhatsApp" placeholder="5543996025783" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-stone-600 mb-1">Aviso de Entrega no Topo</label>
@@ -627,7 +627,7 @@
       storeName: 'Horta do Recanto',
       storeSubtitle: 'Direto do produtor para a sua mesa • Colheita fresca',
       bannerNotice: 'Entregas nesta SEXTA-FEIRA no período da manhã! 🚚💚',
-      whatsappNumber: '5511999999999'
+      whatsappNumber: '5543996025783'
     };
 
     const DEFAULT_PRODUCTS = [
@@ -1126,7 +1126,7 @@
       lines.push(``);
       lines.push(`_Pedido enviado pelo Catálogo Digital_`);
 
-      const cleanPhone = (settings.whatsappNumber || '5511999999999').replace(/\D/g, '');
+      const cleanPhone = (settings.whatsappNumber || '5543996025783').replace(/\D/g, '');
       const encodedText = encodeURIComponent(lines.join('\n'));
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedText}`;
 
