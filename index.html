@@ -333,9 +333,9 @@
     <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl max-h-[94vh] flex flex-col overflow-hidden border border-stone-200 relative">
       
       <!-- Overlay de Loading Admin -->
-      <div id="adminLoadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 hidden flex flex-col items-center justify-center">
+      <div id="adminLoadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 hidden flex flex-col items-center justify-center">
         <div class="loader mb-3"></div>
-        <p class="text-stone-700 font-semibold text-sm">Salvando no banco de dados...</p>
+        <p id="adminLoadingText" class="text-stone-700 font-semibold text-sm">Processando e salvando no banco de dados...</p>
       </div>
 
       <!-- Topbar Admin -->
@@ -345,8 +345,8 @@
             <i data-lucide="shield-check" class="w-5 h-5"></i>
           </div>
           <div>
-            <h2 class="font-bold text-sm sm:text-base leading-tight">Painel Administrativo • Gestão Rápida Semanal</h2>
-            <p class="text-[11px] sm:text-xs text-stone-400">Alterações sincronizadas em tempo real via Firebase Firestore</p>
+            <h2 class="font-bold text-sm sm:text-base leading-tight">Painel Administrativo • Gestão e Pedidos</h2>
+            <p class="text-[11px] sm:text-xs text-stone-400">Câmera Direta, Galeria & Histórico de Pedidos</p>
           </div>
         </div>
         <button onclick="closeAdminModal()" class="p-2 rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition" title="Fechar Painel (Esc)">
@@ -361,7 +361,7 @@
         </div>
         <h3 class="font-display text-xl font-bold text-stone-800">Acesso do Produtor</h3>
         <p class="text-xs text-stone-500">
-          Digite a senha administrativa para editar o banco de dados.<br/>
+          Digite a senha administrativa para gerenciar produtos, fotos e pedidos.<br/>
           <span class="text-stone-400">(Senha padrão: <code class="bg-stone-100 px-1.5 py-0.5 rounded font-mono text-stone-700">1234</code>)</span>
         </p>
         <input
@@ -383,229 +383,338 @@
       <!-- Conteúdo Desbloqueado do Admin -->
       <div id="adminContentSection" class="hidden p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 scroll-smooth">
 
-        <!-- 1. FORMULÁRIO DE EDIÇÃO / CRIAÇÃO EM FOCO NO TOPO -->
-        <div id="adminFormContainer" class="bg-leaf-50/70 p-4 sm:p-5 rounded-2xl border-2 border-leaf-200 transition-all duration-300 space-y-4 shadow-xs">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <span id="formModeBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-leaf-700 text-white flex items-center gap-1.5">
-                ➕ Novo Produto
-              </span>
-              <h3 id="productFormTitle" class="text-sm sm:text-base font-bold text-stone-800">
-                Adicionar item ao catálogo
-              </h3>
-            </div>
-
+        <!-- NAVEGAÇÃO POR ABAS NO ADMIN: PRODUTOS vs PEDIDOS -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3">
+          <div class="flex items-center gap-2">
             <button
-              id="cancelEditBtn"
               type="button"
-              onclick="resetProductForm(true)"
-              class="hidden px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-xs font-bold text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition flex items-center gap-1"
+              id="tabBtnProducts"
+              onclick="switchAdminTab('products')"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-leaf-700 text-white shadow-xs flex items-center gap-2 cursor-pointer"
             >
-              ✕ Cancelar edição (Esc)
+              <span>🥬 Catálogo & Produtos</span>
+            </button>
+            <button
+              type="button"
+              id="tabBtnOrders"
+              onclick="switchAdminTab('orders')"
+              class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-600 hover:bg-stone-200 flex items-center gap-2 cursor-pointer"
+            >
+              <span>📦 Pedidos Recebidos</span>
+              <span id="adminOrdersBadge" class="px-2 py-0.5 text-[11px] rounded-full bg-amber-400 text-stone-950 font-extrabold">0</span>
             </button>
           </div>
+          <span class="text-[11px] text-stone-400">Sincronizado com Firebase Firestore</span>
+        </div>
 
-          <input type="hidden" id="editProductId" value="" />
+        <!-- ABA 1: GESTÃO DE PRODUTOS E CONFIGURAÇÕES -->
+        <div id="adminTabProducts" class="space-y-6">
 
-          <!-- Campos principais -->
-          <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-            <div class="sm:col-span-2">
-              <label class="block text-xs font-bold text-stone-700 mb-1">Ícone / Emoji</label>
-              <div class="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  id="prodEmoji"
-                  placeholder="🥬"
-                  class="w-full px-2 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-lg text-center"
-                />
+          <!-- 1. FORMULÁRIO DE EDIÇÃO / CRIAÇÃO EM FOCO NO TOPO -->
+          <div id="adminFormContainer" class="bg-leaf-50/70 p-4 sm:p-5 rounded-2xl border-2 border-leaf-200 transition-all duration-300 space-y-4 shadow-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span id="formModeBadge" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-leaf-700 text-white flex items-center gap-1.5">
+                  ➕ Novo Produto
+                </span>
+                <h3 id="productFormTitle" class="text-sm sm:text-base font-bold text-stone-800">
+                  Adicionar item ao catálogo
+                </h3>
               </div>
-              <div class="flex items-center justify-between gap-1 mt-1.5 px-0.5 text-sm">
-                <button type="button" onclick="setEmoji('🥬')" class="hover:scale-125 transition" title="Folha">🥬</button>
-                <button type="button" onclick="setEmoji('🌿')" class="hover:scale-125 transition" title="Erva">🌿</button>
-                <button type="button" onclick="setEmoji('🍅')" class="hover:scale-125 transition" title="Tomate">🍅</button>
-                <button type="button" onclick="setEmoji('🍠')" class="hover:scale-125 transition" title="Raiz">🍠</button>
-                <button type="button" onclick="setEmoji('🍯')" class="hover:scale-125 transition" title="Mel">🍯</button>
-                <button type="button" onclick="setEmoji('☕')" class="hover:scale-125 transition" title="Café">☕</button>
-              </div>
-            </div>
 
-            <div class="sm:col-span-4">
-              <label for="prodName" class="block text-xs font-bold text-stone-700 mb-1">Nome do Produto *</label>
-              <input
-                type="text"
-                id="prodName"
-                onkeydown="handleFormKeydown(event)"
-                placeholder="Ex: Chicória orgânica"
-                class="w-full px-3.5 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm font-medium"
-              />
-            </div>
-
-            <div class="sm:col-span-3">
-              <label for="prodPrice" class="block text-xs font-bold text-stone-700 mb-1">Preço (R$) *</label>
-              <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-leaf-700 bg-leaf-100 px-1.5 py-0.5 rounded">R$</span>
-                <input
-                  type="text"
-                  inputmode="decimal"
-                  id="prodPrice"
-                  oninput="maskCurrencyInput(this)"
-                  onfocus="this.select()"
-                  onkeydown="handleFormKeydown(event)"
-                  placeholder="0,00"
-                  class="w-full pl-11 pr-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm font-bold text-leaf-900"
-                />
-              </div>
-              <span class="text-[10px] text-stone-500 mt-0.5 block">Digite números (ex: 600 → R$ 6,00)</span>
-            </div>
-
-            <div class="sm:col-span-3">
-              <label for="prodUnit" class="block text-xs font-bold text-stone-700 mb-1">Embalagem / Unid. *</label>
-              <input
-                type="text"
-                id="prodUnit"
-                onkeydown="handleFormKeydown(event)"
-                placeholder="Ex: o maço, pct com 500g"
-                class="w-full px-3.5 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm"
-              />
-              <div class="flex flex-wrap gap-1 mt-1">
-                <button type="button" onclick="setUnitQuick('o maço')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">o maço</button>
-                <button type="button" onclick="setUnitQuick('pct com 500g')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">pct 500g</button>
-                <button type="button" onclick="setUnitQuick('unidade')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">unidade</button>
-                <button type="button" onclick="setUnitQuick('pct com 1 kg')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">pct 1 kg</button>
-              </div>
-            </div>
-
-            <div class="sm:col-span-4">
-              <label for="prodCategory" class="block text-xs font-bold text-stone-700 mb-1">Categoria</label>
-              <select id="prodCategory" class="w-full px-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm">
-                <option value="Folhas & Hortaliças">Folhas & Hortaliças</option>
-                <option value="Legumes & Raízes">Legumes & Raízes</option>
-                <option value="Temperos & Ervas">Temperos & Ervas</option>
-                <option value="Mercearia & Empório">Mercearia & Empório</option>
-              </select>
-            </div>
-
-            <div class="sm:col-span-5">
-              <label class="block text-xs font-bold text-stone-700 mb-1">Status / Tag de Estoque (1 clique)</label>
-              <input type="hidden" id="prodBadge" value="" />
-              <div id="badgeQuickButtons" class="flex flex-wrap gap-1.5">
-                <button type="button" data-badge="" onclick="selectBadgePill('')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
-                  ✅ Disponível
-                </button>
-                <button type="button" data-badge="Poucas unidades" onclick="selectBadgePill('Poucas unidades')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
-                  ⚡ Poucas unidades
-                </button>
-                <button type="button" data-badge="Quantidade limitada" onclick="selectBadgePill('Quantidade limitada')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
-                  🔥 Quant. limitada
-                </button>
-                <button type="button" data-badge="Esgotado" onclick="selectBadgePill('Esgotado')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
-                  🚫 Esgotado
-                </button>
-              </div>
-            </div>
-
-            <div class="sm:col-span-3">
-              <label for="prodImage" class="block text-xs font-bold text-stone-700 mb-1">URL de Foto (opcional)</label>
-              <input
-                type="url"
-                id="prodImage"
-                onkeydown="handleFormKeydown(event)"
-                placeholder="https://..."
-                class="w-full px-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm"
-              />
-              <span class="text-[10px] text-red-500/90 mt-1 block leading-tight">⚠️ Hospede fotos no <a href="https://pt-br.imgbb.com/" target="_blank" class="underline hover:text-red-700">ImgBB</a> e cole o link direto aqui.</span>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-leaf-200/70">
-            <span id="editingHintText" class="text-[11px] text-stone-500">
-              Dica: Pressione <kbd class="px-1.5 py-0.5 bg-white border border-stone-300 rounded text-[10px] font-semibold">Enter</kbd> em qualquer campo para salvar rapidamente.
-            </span>
-
-            <div class="flex flex-wrap items-center gap-2 ml-auto">
               <button
-                id="primarySaveBtn"
+                id="cancelEditBtn"
                 type="button"
-                onclick="saveProductFromForm(false)"
-                class="bg-leaf-700 hover:bg-leaf-800 active:scale-95 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
+                onclick="resetProductForm(true)"
+                class="hidden px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-xs font-bold text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition flex items-center gap-1 cursor-pointer"
               >
-                <span>💾</span>
-                <span id="saveProductBtnLabel">Adicionar Produto no Firebase</span>
+                ✕ Cancelar edição (Esc)
               </button>
             </div>
+
+            <input type="hidden" id="editProductId" value="" />
+
+            <!-- Campos principais -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-bold text-stone-700 mb-1">Ícone / Emoji</label>
+                <div class="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    id="prodEmoji"
+                    placeholder="🥬"
+                    class="w-full px-2 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-lg text-center"
+                  />
+                </div>
+                <div class="flex items-center justify-between gap-1 mt-1.5 px-0.5 text-sm">
+                  <button type="button" onclick="setEmoji('🥬')" class="hover:scale-125 transition" title="Folha">🥬</button>
+                  <button type="button" onclick="setEmoji('🌿')" class="hover:scale-125 transition" title="Erva">🌿</button>
+                  <button type="button" onclick="setEmoji('🍅')" class="hover:scale-125 transition" title="Tomate">🍅</button>
+                  <button type="button" onclick="setEmoji('🍠')" class="hover:scale-125 transition" title="Raiz">🍠</button>
+                  <button type="button" onclick="setEmoji('🍯')" class="hover:scale-125 transition" title="Mel">🍯</button>
+                  <button type="button" onclick="setEmoji('☕')" class="hover:scale-125 transition" title="Café">☕</button>
+                </div>
+              </div>
+
+              <div class="sm:col-span-4">
+                <label for="prodName" class="block text-xs font-bold text-stone-700 mb-1">Nome do Produto *</label>
+                <input
+                  type="text"
+                  id="prodName"
+                  onkeydown="handleFormKeydown(event)"
+                  placeholder="Ex: Beterraba orgânica"
+                  class="w-full px-3.5 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm font-medium"
+                />
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="prodPrice" class="block text-xs font-bold text-stone-700 mb-1">Preço (R$) *</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-leaf-700 bg-leaf-100 px-1.5 py-0.5 rounded">R$</span>
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    id="prodPrice"
+                    oninput="maskCurrencyInput(this)"
+                    onfocus="this.select()"
+                    onkeydown="handleFormKeydown(event)"
+                    placeholder="0,00"
+                    class="w-full pl-11 pr-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm font-bold text-leaf-900"
+                  />
+                </div>
+                <span class="text-[10px] text-stone-500 mt-0.5 block">Digite números (ex: 600 → R$ 6,00)</span>
+              </div>
+
+              <div class="sm:col-span-3">
+                <label for="prodUnit" class="block text-xs font-bold text-stone-700 mb-1">Embalagem / Unid. *</label>
+                <input
+                  type="text"
+                  id="prodUnit"
+                  onkeydown="handleFormKeydown(event)"
+                  placeholder="Ex: o maço, pct com 500g"
+                  class="w-full px-3.5 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 focus:ring-3 focus:ring-leaf-500/15 outline-none text-sm"
+                />
+                <div class="flex flex-wrap gap-1 mt-1">
+                  <button type="button" onclick="setUnitQuick('o maço')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">o maço</button>
+                  <button type="button" onclick="setUnitQuick('pct com 500g')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">pct 500g</button>
+                  <button type="button" onclick="setUnitQuick('unidade')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">unidade</button>
+                  <button type="button" onclick="setUnitQuick('pct com 1 kg')" class="text-[10px] bg-white border border-stone-200 hover:border-leaf-500 px-1.5 py-0.5 rounded text-stone-600">pct 1 kg</button>
+                </div>
+              </div>
+
+              <div class="sm:col-span-4">
+                <label for="prodCategory" class="block text-xs font-bold text-stone-700 mb-1">Categoria</label>
+                <select id="prodCategory" class="w-full px-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm">
+                  <option value="Folhas & Hortaliças">Folhas & Hortaliças</option>
+                  <option value="Legumes & Raízes">Legumes & Raízes</option>
+                  <option value="Temperos & Ervas">Temperos & Ervas</option>
+                  <option value="Mercearia & Empório">Mercearia & Empório</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-8">
+                <label class="block text-xs font-bold text-stone-700 mb-1">Status / Tag de Estoque (1 clique)</label>
+                <input type="hidden" id="prodBadge" value="" />
+                <div id="badgeQuickButtons" class="flex flex-wrap gap-1.5">
+                  <button type="button" data-badge="" onclick="selectBadgePill('')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
+                    ✅ Disponível
+                  </button>
+                  <button type="button" data-badge="Poucas unidades" onclick="selectBadgePill('Poucas unidades')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
+                    ⚡ Poucas unidades
+                  </button>
+                  <button type="button" data-badge="Quantidade limitada" onclick="selectBadgePill('Quantidade limitada')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
+                    🔥 Quant. limitada
+                  </button>
+                  <button type="button" data-badge="Esgotado" onclick="selectBadgePill('Esgotado')" class="badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border transition">
+                    🚫 Esgotado
+                  </button>
+                </div>
+              </div>
+
+              <!-- SISTEMA DUPLO DE FOTO: CÂMERA DIRETA OU GALERIA/ARQUIVOS -->
+              <div class="sm:col-span-12 bg-white p-4 rounded-2xl border-2 border-leaf-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                  <div id="prodImagePreviewBox" class="w-20 h-20 rounded-2xl bg-leaf-50 border-2 border-leaf-200 flex items-center justify-center text-3xl shrink-0 overflow-hidden shadow-inner relative">
+                    <span id="prodImagePreviewEmoji">🥬</span>
+                    <img id="prodImagePreviewImg" src="" alt="Preview" class="hidden w-full h-full object-cover" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-extrabold text-leaf-900 uppercase tracking-wider">📸 Foto do Produto</span>
+                      <span id="photoStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-800 rounded-full">✓ Foto pronta</span>
+                    </div>
+                    <p class="text-xs text-stone-500">
+                      Tire uma foto na hora com a câmera do celular ou escolha uma imagem salva na galeria/computador:
+                    </p>
+                    
+                    <!-- Botões Nativos Separados: Câmera vs Galeria -->
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                      <!-- Botão 1: Abrir Câmera Direto -->
+                      <button
+                        type="button"
+                        onclick="document.getElementById('prodCameraInput').click()"
+                        class="px-3.5 py-2 bg-leaf-700 hover:bg-leaf-800 active:scale-95 text-white rounded-xl text-xs font-bold cursor-pointer transition inline-flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>📸 Tirar Foto (Câmera)</span>
+                      </button>
+                      <input
+                        type="file"
+                        id="prodCameraInput"
+                        accept="image/*"
+                        capture="environment"
+                        class="hidden"
+                        onchange="handleImageUpload(this)"
+                      />
+
+                      <!-- Botão 2: Abrir Galeria / Arquivos -->
+                      <button
+                        type="button"
+                        onclick="document.getElementById('prodGalleryInput').click()"
+                        class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 rounded-xl text-xs font-bold cursor-pointer transition inline-flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span>🖼️ Escolher da Galeria / PC</span>
+                      </button>
+                      <input
+                        type="file"
+                        id="prodGalleryInput"
+                        accept="image/*"
+                        class="hidden"
+                        onchange="handleImageUpload(this)"
+                      />
+
+                      <!-- Botão Remover Foto -->
+                      <button
+                        type="button"
+                        id="btnRemoveImage"
+                        onclick="clearProductImage()"
+                        class="hidden px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition cursor-pointer"
+                      >
+                        🗑️ Remover Foto
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Campo oculto/auxiliar para URL ou Base64 -->
+                <input type="hidden" id="prodImage" value="" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-leaf-200/70">
+              <span id="editingHintText" class="text-[11px] text-stone-500">
+                Dica: Ao tirar foto de um produto em edição, ela já salva automaticamente!
+              </span>
+
+              <div class="flex flex-wrap items-center gap-2 ml-auto">
+                <button
+                  id="primarySaveBtn"
+                  type="button"
+                  onclick="saveProductFromForm(false)"
+                  class="bg-leaf-700 hover:bg-leaf-800 active:scale-95 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
+                >
+                  <span>💾</span>
+                  <span id="saveProductBtnLabel">Adicionar Produto no Firebase</span>
+                </button>
+              </div>
+            </div>
           </div>
+
+          <!-- 2. TABELA DE PRODUTOS -->
+          <div class="space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm sm:text-base font-bold text-stone-800 flex items-center gap-2">
+                  <span>📋 Produtos no Banco de Dados (<span id="adminProductCount">0</span>)</span>
+                </h3>
+                <p class="text-xs text-stone-500">
+                  Use o botão <b>📷 Foto</b> em qualquer linha abaixo para tirar ou trocar a foto direto na tabela:
+                </p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <!-- Input invisível para troca rápida de foto direto da linha da tabela -->
+                <input type="file" id="quickRowPhotoInput" accept="image/*" class="hidden" onchange="handleQuickRowPhotoUpload(this)" />
+                <input
+                  type="text"
+                  id="adminTableFilterInput"
+                  oninput="renderAdminProductsTable()"
+                  placeholder="Filtrar na tabela..."
+                  class="px-3 py-1.5 bg-stone-100 focus:bg-white rounded-xl border border-stone-300 text-xs outline-none focus:border-leaf-600"
+                />
+              </div>
+            </div>
+
+            <div class="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr class="bg-stone-100 text-stone-600 border-b border-stone-200 text-[11px] uppercase tracking-wider">
+                      <th class="py-3 px-3">Produto</th>
+                      <th class="py-3 px-3">Embalagem</th>
+                      <th class="py-3 px-3">Preço (R$)</th>
+                      <th class="py-3 px-3">Status / Tag</th>
+                      <th class="py-3 px-3 text-right">Ações Rápidas</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminProductsTableBody" class="divide-y divide-stone-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. CONFIGURAÇÕES GERAIS E AVISO DO TOPO -->
+          <div class="bg-stone-50 p-4 sm:p-5 rounded-2xl border border-stone-200 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-sm font-bold text-stone-800 flex items-center gap-2">
+                <span>📣 Configurações da Loja & Aviso de Entrega no Topo</span>
+              </h3>
+              <button
+                type="button"
+                onclick="saveStoreSettings()"
+                class="bg-leaf-600 hover:bg-leaf-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <span>✓ Salvar Configurações</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Negócio</label>
+                <input type="text" id="adminStoreName" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-stone-600 mb-1">WhatsApp de Recebimento</label>
+                <input type="text" id="adminWhatsApp" placeholder="Ex: 5543996025783" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-stone-600 mb-1">Aviso de Entrega no Topo</label>
+                <input type="text" id="adminBannerNotice" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- 2. TABELA DE PRODUTOS -->
-        <div class="space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <!-- ABA 2: BANCO DE DADOS DE PEDIDOS DOS CLIENTES -->
+        <div id="adminTabOrders" class="hidden space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-leaf-50 border border-leaf-200 p-4 rounded-2xl">
             <div>
-              <h3 class="text-sm sm:text-base font-bold text-stone-800 flex items-center gap-2">
-                <span>📋 Produtos no Banco de Dados (<span id="adminProductCount">0</span>)</span>
+              <h3 class="font-bold text-stone-800 text-sm sm:text-base flex items-center gap-2">
+                <span>📦 Histórico de Pedidos Enviados</span>
               </h3>
-              <p class="text-xs text-stone-500">
-                As edições na tabela abaixo são salvas em tempo real no Firestore e atualizam os clientes na mesma hora:
+              <p class="text-xs text-stone-600">
+                Todos os pedidos clicados no botão de WhatsApp ficam salvos automaticamente aqui para seu controle.
               </p>
             </div>
-
-            <div class="flex items-center gap-2">
-              <input
-                type="text"
-                id="adminTableFilterInput"
-                oninput="renderAdminProductsTable()"
-                placeholder="Filtrar na tabela..."
-                class="px-3 py-1.5 bg-stone-100 focus:bg-white rounded-xl border border-stone-300 text-xs outline-none focus:border-leaf-600"
-              />
+            <div class="flex items-center gap-3">
+              <div class="bg-white px-3.5 py-2 rounded-xl border border-leaf-200 text-right">
+                <span class="text-[10px] text-stone-400 uppercase font-bold block">Total Acumulado</span>
+                <span id="adminOrdersTotalRevenue" class="font-display font-bold text-base text-leaf-800">R$ 0,00</span>
+              </div>
             </div>
           </div>
 
-          <div class="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr class="bg-stone-100 text-stone-600 border-b border-stone-200 text-[11px] uppercase tracking-wider">
-                    <th class="py-3 px-3">Produto</th>
-                    <th class="py-3 px-3">Embalagem</th>
-                    <th class="py-3 px-3">Preço (R$)</th>
-                    <th class="py-3 px-3">Status / Tag</th>
-                    <th class="py-3 px-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody id="adminProductsTableBody" class="divide-y divide-stone-100"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. CONFIGURAÇÕES GERAIS E AVISO DO TOPO -->
-        <div class="bg-stone-50 p-4 sm:p-5 rounded-2xl border border-stone-200 space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <h3 class="text-sm font-bold text-stone-800 flex items-center gap-2">
-              <span>📣 Configurações da Loja & Aviso de Entrega no Topo</span>
-            </h3>
-            <button
-              type="button"
-              onclick="saveStoreSettings()"
-              class="bg-leaf-600 hover:bg-leaf-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <span>✓ Salvar Configurações</span>
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Nome do Negócio</label>
-              <input type="text" id="adminStoreName" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">WhatsApp de Recebimento</label>
-              <input type="text" id="adminWhatsApp" placeholder="Ex: 5543996025783" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Aviso de Entrega no Topo</label>
-              <input type="text" id="adminBannerNotice" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
-            </div>
-          </div>
+          <div id="adminOrdersList" class="space-y-3"></div>
         </div>
 
       </div>
@@ -622,10 +731,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
     import { 
-      getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, serverTimestamp 
+      getFirestore, collection, onSnapshot, doc, setDoc, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-    // CONFIGURAÇÃO CORRIGIDA (Com a vírgula após appId!)
     const firebaseConfig = {
       apiKey: "AIzaSyAAw1V0-AuNUGDa5YNju3k_MKwMr9mPns4",
       authDomain: "catalogo-hortifrutti.firebaseapp.com",
@@ -636,7 +744,8 @@
       measurementId: "G-3GLX1QT5TQ"
     };
 
-    const COLLECTION_NAME = 'produtos'; // Nome exato da coleção criada no seu Firestore
+    const COLLECTION_NAME = 'produtos';
+    const ORDERS_COLLECTION = 'pedidos';
 
     const INITIAL_PRODUCTS = [
       { id: "prod_1", emoji: "🥬", name: "Chicória orgânica", price: 6.00, unit: "o maço", category: "Folhas & Hortaliças", badge: "Quantidade limitada", image: "" },
@@ -678,12 +787,14 @@
     };
 
     let products = [];
+    let orders = [];
     let settings = { ...DEFAULT_SETTINGS };
     let cart = {};
     let activeCategory = 'Todos';
     let searchQuery = '';
     let isAdminAuthenticated = false;
     let lastUpdatedProductId = null;
+    let quickPhotoTargetProductId = null;
     let secretClicks = 0;
 
     const STORAGE_KEYS = {
@@ -708,7 +819,7 @@
             await setDoc(doc(db, COLLECTION_NAME, item.id), {
               ...item,
               updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
           }
         }
       } catch (e) {
@@ -739,6 +850,7 @@
 
       if (isFirebaseConfigured) {
         syncSettings();
+        syncOrders();
         seedInitialProductsIfNeeded().then(() => {
           syncProducts();
         });
@@ -753,7 +865,7 @@
         if (docSnap.exists()) {
           settings = { ...DEFAULT_SETTINGS, ...docSnap.data() };
         } else {
-          setDoc(settingsRef, DEFAULT_SETTINGS);
+          setDoc(settingsRef, DEFAULT_SETTINGS, { merge: true });
         }
         applySettingsToUI();
       }, (error) => console.error("Erro ao ler settings", error));
@@ -788,6 +900,24 @@
         console.error("Erro ao ler produtos:", error);
         document.getElementById('firebaseLoadingState').innerHTML = `<p class="text-red-500 font-bold">Erro ao conectar com o banco de dados: ${error.message}</p>`;
       });
+    }
+
+    function syncOrders() {
+      const ordersCol = collection(db, ORDERS_COLLECTION);
+      onSnapshot(ordersCol, (snapshot) => {
+        const tempOrders = [];
+        snapshot.forEach((docSnap) => {
+          tempOrders.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        orders = tempOrders.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+        
+        const badgeEl = document.getElementById('adminOrdersBadge');
+        if (badgeEl) badgeEl.textContent = orders.length;
+
+        if (isAdminAuthenticated) {
+          renderAdminOrders();
+        }
+      }, (error) => console.warn("Aviso ao sincronizar pedidos:", error));
     }
 
     function applySettingsToUI() {
@@ -840,8 +970,150 @@
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
         toast.classList.add('hidden');
-      }, 2800);
+      }, 3200);
     }
+
+    // =========================================================================
+    // MOTOR DE PROCESSAMENTO DE FOTO BLINDADO (CÂMERA DIRETA E GALERIA)
+    // =========================================================================
+    function compressImageFileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        
+        img.onload = function() {
+          URL.revokeObjectURL(objectUrl);
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 260; // Tamanho leve e nítido que nunca estoura limite do Firestore
+            const width = img.naturalWidth || img.width;
+            const height = img.naturalHeight || img.height;
+
+            const minSide = Math.min(width, height);
+            const sx = (width - minSide) / 2;
+            const sy = (height - minSide) / 2;
+
+            canvas.width = MAX_SIZE;
+            canvas.height = MAX_SIZE;
+            const ctx = canvas.getContext('2d');
+
+            // Fundo branco para imagens PNG transparentes
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, MAX_SIZE, MAX_SIZE);
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, MAX_SIZE, MAX_SIZE);
+
+            // Usa image/jpeg para 100% de compatibilidade com iOS/Safari e Android
+            const base64Jpeg = canvas.toDataURL('image/jpeg', 0.80);
+            resolve(base64Jpeg);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        img.onerror = function() {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error("Formato de imagem não suportado pelo navegador."));
+        };
+
+        img.src = objectUrl;
+      });
+    }
+
+    window.handleImageUpload = async function(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      setAdminLoading(true, "Processando foto...");
+      try {
+        const dataUrl = await compressImageFileToBase64(file);
+        document.getElementById('prodImage').value = dataUrl;
+        updateImagePreviewFromInput(dataUrl);
+
+        // Se o usuário já estiver editando um produto existente, salva a foto automaticamente no Firebase!
+        const currentEditId = document.getElementById('editProductId').value.trim();
+        if (currentEditId && isFirebaseConfigured) {
+          await setDoc(doc(db, COLLECTION_NAME, currentEditId), {
+            image: dataUrl,
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          lastUpdatedProductId = currentEditId;
+          showToast('📸 Foto enviada e salva no produto com sucesso!');
+        } else {
+          showToast('📸 Foto carregada! Preencha os dados e clique em Salvar.');
+        }
+      } catch (err) {
+        console.error("Erro ao processar foto:", err);
+        alert("Não foi possível carregar esta foto. Tente tirar uma foto normal pela câmera.");
+      }
+      inputEl.value = '';
+      setAdminLoading(false);
+    };
+
+    // Botão de trocar foto com 1 clique direto na linha da tabela
+    window.triggerQuickRowPhoto = function(productId) {
+      quickPhotoTargetProductId = productId;
+      document.getElementById('quickRowPhotoInput').click();
+    };
+
+    window.handleQuickRowPhotoUpload = async function(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file || !quickPhotoTargetProductId) return;
+
+      setAdminLoading(true, "Salvando nova foto no produto...");
+      try {
+        const dataUrl = await compressImageFileToBase64(file);
+        await setDoc(doc(db, COLLECTION_NAME, quickPhotoTargetProductId), {
+          image: dataUrl,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        lastUpdatedProductId = quickPhotoTargetProductId;
+        showToast('📸 Foto do produto atualizada na hora!');
+      } catch (err) {
+        console.error("Erro ao salvar foto rápida:", err);
+        alert("Erro ao enviar a foto: " + err.message);
+      }
+      inputEl.value = '';
+      quickPhotoTargetProductId = null;
+      setAdminLoading(false);
+    };
+
+    window.updateImagePreviewFromInput = function(val) {
+      const imgEl = document.getElementById('prodImagePreviewImg');
+      const emojiEl = document.getElementById('prodImagePreviewEmoji');
+      const removeBtn = document.getElementById('btnRemoveImage');
+      const badgeEl = document.getElementById('photoStatusBadge');
+
+      if (val && val.trim() !== '') {
+        imgEl.src = val.trim();
+        imgEl.classList.remove('hidden');
+        emojiEl.classList.add('hidden');
+        removeBtn.classList.remove('hidden');
+        if (badgeEl) badgeEl.classList.remove('hidden');
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        emojiEl.classList.remove('hidden');
+        emojiEl.textContent = document.getElementById('prodEmoji').value || '🥬';
+        removeBtn.classList.add('hidden');
+        if (badgeEl) badgeEl.classList.add('hidden');
+      }
+    };
+
+    window.clearProductImage = async function() {
+      document.getElementById('prodImage').value = '';
+      document.getElementById('prodCameraInput').value = '';
+      document.getElementById('prodGalleryInput').value = '';
+      updateImagePreviewFromInput('');
+
+      const currentEditId = document.getElementById('editProductId').value.trim();
+      if (currentEditId && isFirebaseConfigured) {
+        await setDoc(doc(db, COLLECTION_NAME, currentEditId), {
+          image: '',
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        showToast('Foto removida do produto.');
+      }
+    };
 
     function renderCategories() {
       const categorySet = new Set(['Todos']);
@@ -907,9 +1179,11 @@
 
             <div class="flex items-start gap-3.5">
               ${product.image ? `
-                <img src="${product.image}" alt="${product.name}" class="w-16 h-16 rounded-2xl object-cover bg-stone-100 border border-stone-200 shrink-0" />
+                <div class="w-16 h-16 rounded-2xl bg-leaf-50 border border-leaf-100 p-0.5 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                  <img src="${product.image}" alt="${product.name}" class="w-full h-full rounded-[14px] object-cover" />
+                </div>
               ` : `
-                <div class="w-14 h-14 rounded-2xl bg-leaf-50 border border-leaf-100 flex items-center justify-center text-3xl shrink-0 select-none">
+                <div class="w-16 h-16 rounded-2xl bg-leaf-50 border border-leaf-100 flex items-center justify-center text-3xl shrink-0 select-none">
                   ${product.emoji || '🥬'}
                 </div>
               `}
@@ -1060,7 +1334,7 @@
         container.innerHTML = detailedItems.map(item => `
           <div class="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-stone-200/80">
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="text-xl shrink-0">${item.emoji || '🥬'}</span>
+              ${item.image ? `<img src="${item.image}" class="w-9 h-9 rounded-lg object-cover shrink-0" />` : `<span class="text-xl shrink-0">${item.emoji || '🥬'}</span>`}
               <div class="min-w-0">
                 <h4 class="text-xs sm:text-sm font-bold text-stone-800 truncate">${item.name}</h4>
                 <p class="text-[11px] text-stone-500">${item.unit} • ${formatBRL(item.price)} un.</p>
@@ -1079,7 +1353,7 @@
       }
     }
 
-    function sendOrderToWhatsApp() {
+    async function sendOrderToWhatsApp() {
       const { detailedItems, totalPrice, hasCoffee } = getCartSummary();
       if (detailedItems.length === 0) return;
 
@@ -1096,6 +1370,32 @@
       const coffeeChoice = hasCoffee
         ? document.querySelector('input[name="coffeeType"]:checked')?.value || 'Moído'
         : null;
+
+      if (isFirebaseConfigured) {
+        try {
+          await addDoc(collection(db, ORDERS_COLLECTION), {
+            customerName: name,
+            neighborhood: neighborhood,
+            address: address || '',
+            paymentMethod: payment,
+            coffeePreference: coffeeChoice || '',
+            totalPrice: Number(totalPrice),
+            status: 'Novo',
+            createdAtMs: Date.now(),
+            createdAtFormatted: new Date().toLocaleString('pt-BR'),
+            items: detailedItems.map(i => ({
+              id: i.id,
+              name: i.name,
+              qty: i.qty,
+              unit: i.unit,
+              price: Number(i.price),
+              subtotal: Number(i.subtotal)
+            }))
+          });
+        } catch (err) {
+          console.error("Erro ao registrar pedido no banco:", err);
+        }
+      }
 
       const lines = [
         `🌿 *NOVO PEDIDO - ${settings.storeName.toUpperCase()}* 🌿`,
@@ -1128,11 +1428,117 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    function setAdminLoading(isLoading) {
+    function setAdminLoading(isLoading, customText = "Salvando no banco de dados...") {
       const overlay = document.getElementById('adminLoadingOverlay');
+      const textEl = document.getElementById('adminLoadingText');
+      if (textEl) textEl.textContent = customText;
       if(isLoading) overlay.classList.remove('hidden');
       else overlay.classList.add('hidden');
     }
+
+    window.switchAdminTab = function(tab) {
+      const tabProducts = document.getElementById('adminTabProducts');
+      const tabOrders = document.getElementById('adminTabOrders');
+      const btnProducts = document.getElementById('tabBtnProducts');
+      const btnOrders = document.getElementById('tabBtnOrders');
+
+      if (tab === 'orders') {
+        tabProducts.classList.add('hidden');
+        tabOrders.classList.remove('hidden');
+        btnOrders.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-leaf-700 text-white shadow-xs flex items-center gap-2 cursor-pointer';
+        btnProducts.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-600 hover:bg-stone-200 flex items-center gap-2 cursor-pointer';
+        renderAdminOrders();
+      } else {
+        tabOrders.classList.add('hidden');
+        tabProducts.classList.remove('hidden');
+        btnProducts.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-leaf-700 text-white shadow-xs flex items-center gap-2 cursor-pointer';
+        btnOrders.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-600 hover:bg-stone-200 flex items-center gap-2 cursor-pointer';
+      }
+    };
+
+    function renderAdminOrders() {
+      const listEl = document.getElementById('adminOrdersList');
+      const totalRevEl = document.getElementById('adminOrdersTotalRevenue');
+
+      const totalRev = orders.reduce((acc, o) => acc + Number(o.totalPrice || 0), 0);
+      if (totalRevEl) totalRevEl.textContent = formatBRL(totalRev);
+
+      if (orders.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-12 bg-stone-50 rounded-2xl border border-stone-200 text-stone-400">
+            <p class="text-3xl mb-2">📭</p>
+            <p class="text-sm font-semibold text-stone-600">Nenhum pedido registrado ainda.</p>
+            <p class="text-xs text-stone-400 mt-1">Assim que um cliente enviar um pedido pelo site, ele aparecerá aqui.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = orders.map(order => {
+        const isDone = order.status === 'Entregue';
+        const itemsList = (order.items || []).map(i => `${i.qty}x ${i.name} (${i.unit})`).join(' • ');
+
+        return `
+          <div class="bg-white rounded-2xl border ${isDone ? 'border-stone-200 opacity-75' : 'border-leaf-300 shadow-xs'} p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${isDone ? 'bg-stone-200 text-stone-700' : 'bg-amber-100 text-amber-900'}">
+                  ${order.status || 'Novo'}
+                </span>
+                <h4 class="font-bold text-stone-900 text-sm sm:text-base">${order.customerName || 'Cliente'}</h4>
+                <span class="text-xs text-stone-400">• ${order.createdAtFormatted || ''}</span>
+              </div>
+              <p class="text-xs text-stone-600 font-medium">
+                📍 <b>Bairro:</b> ${order.neighborhood || '-'} ${order.address ? `| 🏠 ${order.address}` : ''} | 💳 <b>Pagto:</b> ${order.paymentMethod || 'PIX'}
+              </p>
+              <p class="text-xs text-leaf-800 bg-leaf-50 px-3 py-1.5 rounded-xl border border-leaf-100 mt-1.5">
+                🧺 ${itemsList} ${order.coffeePreference ? `| ☕ Café: ${order.coffeePreference}` : ''}
+              </p>
+            </div>
+
+            <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-stone-100">
+              <span class="font-display font-bold text-lg text-leaf-900">${formatBRL(order.totalPrice)}</span>
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onclick="window.toggleOrderStatus('${order.id}', '${isDone ? 'Novo' : 'Entregue'}')"
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${isDone ? 'bg-stone-100 text-stone-600 hover:bg-stone-200' : 'bg-leaf-600 text-white hover:bg-leaf-700'}"
+                >
+                  ${isDone ? '↩ Reabrir' : '✓ Concluir'}
+                </button>
+                <button
+                  type="button"
+                  onclick="window.deleteOrder('${order.id}')"
+                  class="px-2.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition cursor-pointer"
+                  title="Excluir pedido"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.toggleOrderStatus = async function(orderId, newStatus) {
+      try {
+        await setDoc(doc(db, ORDERS_COLLECTION, orderId), { status: newStatus }, { merge: true });
+        showToast(`Pedido marcado como ${newStatus}!`);
+      } catch (e) {
+        showToast('Erro ao atualizar pedido.');
+      }
+    };
+
+    window.deleteOrder = async function(orderId) {
+      if (!confirm('Deseja excluir este pedido do histórico?')) return;
+      try {
+        await deleteDoc(doc(db, ORDERS_COLLECTION, orderId));
+        showToast('Pedido removido do histórico.');
+      } catch (e) {
+        showToast('Erro ao excluir pedido.');
+      }
+    };
 
     async function saveStoreSettings() {
       const storeName = document.getElementById('adminStoreName').value.trim();
@@ -1171,9 +1577,10 @@
         const productData = { emoji, name, price, unit, category, badge, image, updatedAt: serverTimestamp() };
         
         if (editId) {
-          await updateDoc(doc(db, COLLECTION_NAME, editId), productData);
+          // Usa setDoc com merge:true em vez de updateDoc para NUNCA falhar
+          await setDoc(doc(db, COLLECTION_NAME, editId), productData, { merge: true });
           lastUpdatedProductId = editId;
-          showToast('Produto atualizado no Firestore!');
+          showToast('Produto atualizado com sucesso!');
           resetProductForm(false);
         } else {
           const newDocRef = doc(collection(db, COLLECTION_NAME));
@@ -1184,7 +1591,7 @@
         }
       } catch (err) {
         console.error(err);
-        showToast('Erro ao salvar produto.');
+        alert('Erro ao salvar no banco de dados: ' + err.message);
       }
       setAdminLoading(false);
     }
@@ -1196,7 +1603,7 @@
         return;
       }
       try {
-        await updateDoc(doc(db, COLLECTION_NAME, productId), { price: parsed, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, COLLECTION_NAME, productId), { price: parsed, updatedAt: serverTimestamp() }, { merge: true });
         lastUpdatedProductId = productId;
         showToast(`Preço atualizado em tempo real!`);
       } catch (err) {
@@ -1207,7 +1614,7 @@
 
     async function quickUpdateBadge(productId, newBadge) {
       try {
-        await updateDoc(doc(db, COLLECTION_NAME, productId), { badge: newBadge, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, COLLECTION_NAME, productId), { badge: newBadge, updatedAt: serverTimestamp() }, { merge: true });
         lastUpdatedProductId = productId;
         showToast(`Status alterado no Firebase!`);
       } catch (err) {
@@ -1237,6 +1644,8 @@
       const prod = products.find(p => String(p.id) === String(id));
       if (!prod) return;
 
+      window.switchAdminTab('products');
+
       document.getElementById('editProductId').value = prod.id;
       document.getElementById('prodEmoji').value = prod.emoji || '🥬';
       document.getElementById('prodName').value = prod.name || '';
@@ -1244,6 +1653,7 @@
       document.getElementById('prodUnit').value = prod.unit || '';
       document.getElementById('prodCategory').value = prod.category || 'Folhas & Hortaliças';
       document.getElementById('prodImage').value = prod.image || '';
+      updateImagePreviewFromInput(prod.image || '');
       window.selectBadgePill(prod.badge || '');
 
       const formContainer = document.getElementById('adminFormContainer');
@@ -1267,6 +1677,9 @@
       document.getElementById('prodPrice').value = '';
       document.getElementById('prodUnit').value = '';
       document.getElementById('prodImage').value = '';
+      document.getElementById('prodCameraInput').value = '';
+      document.getElementById('prodGalleryInput').value = '';
+      updateImagePreviewFromInput('');
       window.selectBadgePill('');
 
       const formContainer = document.getElementById('adminFormContainer');
@@ -1315,7 +1728,11 @@
           >
             <td class="py-2.5 px-3">
               <div class="flex items-center gap-2.5">
-                <span class="text-xl w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">${prod.emoji || '🥬'}</span>
+                ${prod.image ? `
+                  <img src="${prod.image}" class="w-10 h-10 rounded-xl object-cover border border-stone-200 shrink-0 shadow-2xs" />
+                ` : `
+                  <span class="text-xl w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center shrink-0">${prod.emoji || '🥬'}</span>
+                `}
                 <div>
                   <div class="font-bold text-stone-900 leading-snug flex items-center gap-1.5">
                     <span>${prod.name}</span>
@@ -1356,10 +1773,26 @@
             </td>
 
             <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
-              <button type="button" onclick="window.editProduct('${prod.id}')" class="px-3 py-1.5 cursor-pointer ${isBeingEdited ? 'bg-amber-500 text-stone-950 font-bold' : 'bg-leaf-50 hover:bg-leaf-100 text-leaf-800 font-semibold border border-leaf-200'} rounded-xl text-xs transition inline-flex items-center gap-1">
+              <button
+                type="button"
+                onclick="window.triggerQuickRowPhoto('${prod.id}')"
+                title="Tirar ou trocar foto com 1 clique"
+                class="px-2.5 py-1.5 cursor-pointer bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs transition inline-flex items-center gap-1"
+              >
+                <span>📷 Foto</span>
+              </button>
+              <button
+                type="button"
+                onclick="window.editProduct('${prod.id}')"
+                class="px-3 py-1.5 cursor-pointer ${isBeingEdited ? 'bg-amber-500 text-stone-950 font-bold' : 'bg-leaf-50 hover:bg-leaf-100 text-leaf-800 font-semibold border border-leaf-200'} rounded-xl text-xs transition inline-flex items-center gap-1"
+              >
                 <span>✏️ Editar</span>
               </button>
-              <button type="button" onclick="window.deleteProduct('${prod.id}')" class="px-2.5 py-1.5 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition">
+              <button
+                type="button"
+                onclick="window.deleteProduct('${prod.id}')"
+                class="px-2.5 py-1.5 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition"
+              >
                 🗑️
               </button>
             </td>
@@ -1382,7 +1815,12 @@
     window.closeCartModal = () => document.getElementById('cartModal').classList.add('hidden');
     
     window.maskCurrencyInput = maskCurrencyInput;
-    window.setEmoji = (emoji) => document.getElementById('prodEmoji').value = emoji;
+    window.setEmoji = (emoji) => {
+      document.getElementById('prodEmoji').value = emoji;
+      if (!document.getElementById('prodImage').value) {
+        document.getElementById('prodImagePreviewEmoji').textContent = emoji;
+      }
+    };
     window.setUnitQuick = (unitText) => document.getElementById('prodUnit').value = unitText;
     window.selectBadgePill = (badgeValue) => {
       document.getElementById('prodBadge').value = badgeValue;
@@ -1426,6 +1864,7 @@
       document.getElementById('adminWhatsApp').value = settings.whatsappNumber;
       document.getElementById('adminBannerNotice').value = settings.bannerNotice;
       renderAdminProductsTable();
+      renderAdminOrders();
     }
 
     window.saveStoreSettings = saveStoreSettings;
