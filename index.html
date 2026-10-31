@@ -4,12 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Horta do Recanto | Catálogo Digital de Orgânicos</title>
+  
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Google Fonts: Plus Jakarta Sans & Fraunces -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
@@ -73,9 +76,18 @@
     .animate-form-focus {
       animation: form-pulse 0.35s ease-in-out;
     }
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 3px solid #3aa665;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="min-h-screen flex flex-col pb-28">
+<body class="min-h-screen flex flex-col pb-28 relative">
 
   <!-- TOP BANNER DE ENTREGA -->
   <div class="bg-gradient-to-r from-leaf-800 via-leaf-700 to-leaf-800 text-white px-4 py-2.5 shadow-sm sticky top-0 z-30">
@@ -84,7 +96,8 @@
         <span class="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
         <span id="bannerNoticeText">Entregas nesta SEXTA-FEIRA no período da manhã! 🚚💚</span>
       </div>
-      <button onclick="openAdminModal()" title="Painel Administrativo" class="text-leaf-100 hover:text-white transition px-2.5 py-1 rounded-lg bg-leaf-900/50 hover:bg-leaf-600/70 shrink-0 flex items-center gap-1.5 text-xs font-semibold border border-leaf-600/40">
+      <!-- Botão Admin - Aparece se ?admin=1 ou clicando 5x na cesta -->
+      <button id="btnOpenAdmin" onclick="openAdminModal()" title="Painel Administrativo" class="hidden text-leaf-100 hover:text-white transition px-2.5 py-1 rounded-lg bg-leaf-900/50 hover:bg-leaf-600/70 shrink-0 flex items-center gap-1.5 text-xs font-semibold border border-leaf-600/40 cursor-pointer">
         <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
         <span>Painel Admin</span>
       </button>
@@ -95,9 +108,9 @@
   <header class="bg-white border-b border-stone-200/80 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 pt-5 pb-4">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <!-- Identidade da Marca -->
+        <!-- Identidade da Marca (Clique 5x na cesta para abrir Admin secreto) -->
         <div class="flex items-center gap-3.5">
-          <div class="w-14 h-14 rounded-2xl bg-leaf-100 border border-leaf-200 flex items-center justify-center text-3xl shadow-inner shrink-0">
+          <div onclick="secretAdminTrigger()" title="Horta do Recanto" class="w-14 h-14 rounded-2xl bg-leaf-100 border border-leaf-200 flex items-center justify-center text-3xl shadow-inner shrink-0 cursor-pointer select-none">
             🧺
           </div>
           <div>
@@ -138,13 +151,19 @@
     </div>
   </header>
 
+  <!-- LOADING STATE FIREBASE -->
+  <div id="firebaseLoadingState" class="flex flex-col items-center justify-center py-20 px-4">
+    <div class="loader mb-4"></div>
+    <p class="text-stone-500 text-sm font-medium animate-pulse">Sincronizando produtos em tempo real...</p>
+  </div>
+
   <!-- CONTEÚDO PRINCIPAL: LISTAGEM DE PRODUTOS -->
-  <main class="max-w-6xl mx-auto w-full px-4 py-6 flex-1">
+  <main id="mainContent" class="hidden max-w-6xl mx-auto w-full px-4 py-6 flex-1">
     <div class="flex items-center justify-between mb-4">
       <p id="productCountLabel" class="text-xs sm:text-sm text-stone-500 font-medium">
         Mostrando todos os produtos
       </p>
-      <button onclick="openCartModal()" class="text-xs sm:text-sm font-semibold text-leaf-700 hover:text-leaf-800 flex items-center gap-1">
+      <button onclick="openCartModal()" class="text-xs sm:text-sm font-semibold text-leaf-700 hover:text-leaf-800 flex items-center gap-1 cursor-pointer">
         <i data-lucide="shopping-bag" class="w-4 h-4"></i>
         Ver meu cesto (<span id="topCartCount">0</span>)
       </button>
@@ -186,7 +205,7 @@
 
       <button
         onclick="openCartModal()"
-        class="bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-sm sm:text-base px-4 sm:px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2"
+        class="bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-sm sm:text-base px-4 sm:px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
       >
         <span>Ver Cesto / Pedir</span>
         <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -299,7 +318,7 @@
           <button
             onclick="sendOrderToWhatsApp()"
             id="sendWhatsAppBtn"
-            class="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-green-600/20 transition flex items-center justify-center gap-2 text-sm sm:text-base"
+            class="flex-1 bg-[#25D366] hover:bg-[#1ebe5d] active:scale-[0.99] text-white font-bold py-3.5 px-5 rounded-xl shadow-lg shadow-green-600/20 transition flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
           >
             <i data-lucide="message-circle" class="w-5 h-5"></i>
             <span>Enviar Pedido via WhatsApp</span>
@@ -311,7 +330,14 @@
 
   <!-- MODAL: PAINEL ADMINISTRATIVO OTIMIZADO -->
   <div id="adminModal" class="fixed inset-0 z-50 hidden bg-stone-950/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl max-h-[94vh] flex flex-col overflow-hidden border border-stone-200">
+    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl max-h-[94vh] flex flex-col overflow-hidden border border-stone-200 relative">
+      
+      <!-- Overlay de Loading Admin -->
+      <div id="adminLoadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 hidden flex flex-col items-center justify-center">
+        <div class="loader mb-3"></div>
+        <p class="text-stone-700 font-semibold text-sm">Salvando no banco de dados...</p>
+      </div>
+
       <!-- Topbar Admin -->
       <div class="px-5 sm:px-6 py-4 bg-stone-900 text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
@@ -320,7 +346,7 @@
           </div>
           <div>
             <h2 class="font-bold text-sm sm:text-base leading-tight">Painel Administrativo • Gestão Rápida Semanal</h2>
-            <p class="text-[11px] sm:text-xs text-stone-400">Alterações salvas instantaneamente no navegador (LocalStorage)</p>
+            <p class="text-[11px] sm:text-xs text-stone-400">Alterações sincronizadas em tempo real via Firebase Firestore</p>
           </div>
         </div>
         <button onclick="closeAdminModal()" class="p-2 rounded-full text-stone-400 hover:text-white hover:bg-stone-800 transition" title="Fechar Painel (Esc)">
@@ -335,7 +361,7 @@
         </div>
         <h3 class="font-display text-xl font-bold text-stone-800">Acesso do Produtor</h3>
         <p class="text-xs text-stone-500">
-          Digite a senha administrativa para editar preços, avisos e estoque da semana.<br/>
+          Digite a senha administrativa para editar o banco de dados.<br/>
           <span class="text-stone-400">(Senha padrão: <code class="bg-stone-100 px-1.5 py-0.5 rounded font-mono text-stone-700">1234</code>)</span>
         </p>
         <input
@@ -345,10 +371,10 @@
           placeholder="Digite a senha..."
           class="w-full px-4 py-2.5 text-center rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm"
         />
-        <p id="adminLoginError" class="hidden text-xs text-red-600 font-semibold">Senha incorreta. Tente novamente (1234).</p>
+        <p id="adminLoginError" class="hidden text-xs text-red-600 font-semibold">Senha incorreta. Tente novamente.</p>
         <button
           onclick="verifyAdminPassword()"
-          class="w-full bg-leaf-700 hover:bg-leaf-800 text-white font-bold py-2.5 rounded-xl transition text-sm"
+          class="w-full bg-leaf-700 hover:bg-leaf-800 text-white font-bold py-2.5 rounded-xl transition text-sm cursor-pointer"
         >
           Entrar no Painel
         </button>
@@ -383,7 +409,6 @@
 
           <!-- Campos principais -->
           <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-            <!-- Emoji + Seletor Rápido -->
             <div class="sm:col-span-2">
               <label class="block text-xs font-bold text-stone-700 mb-1">Ícone / Emoji</label>
               <div class="flex items-center gap-1.5">
@@ -404,7 +429,6 @@
               </div>
             </div>
 
-            <!-- Nome do Produto -->
             <div class="sm:col-span-4">
               <label for="prodName" class="block text-xs font-bold text-stone-700 mb-1">Nome do Produto *</label>
               <input
@@ -416,7 +440,6 @@
               />
             </div>
 
-            <!-- Preço com Máscara R$ -->
             <div class="sm:col-span-3">
               <label for="prodPrice" class="block text-xs font-bold text-stone-700 mb-1">Preço (R$) *</label>
               <div class="relative">
@@ -435,7 +458,6 @@
               <span class="text-[10px] text-stone-500 mt-0.5 block">Digite números (ex: 600 → R$ 6,00)</span>
             </div>
 
-            <!-- Embalagem / Unidade -->
             <div class="sm:col-span-3">
               <label for="prodUnit" class="block text-xs font-bold text-stone-700 mb-1">Embalagem / Unid. *</label>
               <input
@@ -453,7 +475,6 @@
               </div>
             </div>
 
-            <!-- Categoria -->
             <div class="sm:col-span-4">
               <label for="prodCategory" class="block text-xs font-bold text-stone-700 mb-1">Categoria</label>
               <select id="prodCategory" class="w-full px-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm">
@@ -464,7 +485,6 @@
               </select>
             </div>
 
-            <!-- Troca Rápida de Tag (1 clique, sem precisar abrir select) -->
             <div class="sm:col-span-5">
               <label class="block text-xs font-bold text-stone-700 mb-1">Status / Tag de Estoque (1 clique)</label>
               <input type="hidden" id="prodBadge" value="" />
@@ -484,7 +504,6 @@
               </div>
             </div>
 
-            <!-- URL de Foto Opcional -->
             <div class="sm:col-span-3">
               <label for="prodImage" class="block text-xs font-bold text-stone-700 mb-1">URL de Foto (opcional)</label>
               <input
@@ -494,50 +513,38 @@
                 placeholder="https://..."
                 class="w-full px-3 py-2.5 bg-white rounded-xl border border-stone-300 focus:border-leaf-600 outline-none text-sm"
               />
+              <span class="text-[10px] text-red-500/90 mt-1 block leading-tight">⚠️ Hospede fotos no <a href="https://pt-br.imgbb.com/" target="_blank" class="underline hover:text-red-700">ImgBB</a> e cole o link direto aqui.</span>
             </div>
           </div>
 
-          <!-- Botões de Ação do Formulário -->
           <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-leaf-200/70">
             <span id="editingHintText" class="text-[11px] text-stone-500">
               Dica: Pressione <kbd class="px-1.5 py-0.5 bg-white border border-stone-300 rounded text-[10px] font-semibold">Enter</kbd> em qualquer campo para salvar rapidamente.
             </span>
 
             <div class="flex flex-wrap items-center gap-2 ml-auto">
-              <!-- Botão Salvar e Continuar (Edição Sequencial Rápida) -->
-              <button
-                id="saveAndNextBtn"
-                type="button"
-                onclick="saveProductFromForm(true)"
-                class="hidden bg-amber-500 hover:bg-amber-600 active:scale-95 text-stone-950 font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5"
-                title="Salva este produto e já carrega o próximo da tabela automaticamente"
-              >
-                <span>⏭️ Salvar e Editar Próximo</span>
-              </button>
-
-              <!-- Botão Principal Salvar / Atualizar -->
               <button
                 id="primarySaveBtn"
                 type="button"
                 onclick="saveProductFromForm(false)"
-                class="bg-leaf-700 hover:bg-leaf-800 active:scale-95 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2"
+                class="bg-leaf-700 hover:bg-leaf-800 active:scale-95 text-white font-bold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer"
               >
                 <span>💾</span>
-                <span id="saveProductBtnLabel">Adicionar Produto</span>
+                <span id="saveProductBtnLabel">Adicionar Produto no Firebase</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 2. TABELA DE PRODUTOS COM EDIÇÃO RÁPIDA INLINE + BOTÃO EDITAR COMPLETO -->
+        <!-- 2. TABELA DE PRODUTOS -->
         <div class="space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h3 class="text-sm sm:text-base font-bold text-stone-800 flex items-center gap-2">
-                <span>📋 Produtos Cadastrados (<span id="adminProductCount">0</span>)</span>
+                <span>📋 Produtos no Banco de Dados (<span id="adminProductCount">0</span>)</span>
               </h3>
               <p class="text-xs text-stone-500">
-                Você pode clicar em <strong>Editar</strong> para abrir nos campos acima, ou alterar <strong>Preço</strong> e <strong>Tag</strong> direto na linha abaixo:
+                As edições na tabela abaixo são salvas em tempo real no Firestore e atualizam os clientes na mesma hora:
               </p>
             </div>
 
@@ -549,13 +556,6 @@
                 placeholder="Filtrar na tabela..."
                 class="px-3 py-1.5 bg-stone-100 focus:bg-white rounded-xl border border-stone-300 text-xs outline-none focus:border-leaf-600"
               />
-              <button
-                type="button"
-                onclick="resetCatalogToDefaults()"
-                class="text-xs text-red-600 hover:text-red-700 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition whitespace-nowrap"
-              >
-                ↺ Restaurar padrão
-              </button>
             </div>
           </div>
 
@@ -566,8 +566,8 @@
                   <tr class="bg-stone-100 text-stone-600 border-b border-stone-200 text-[11px] uppercase tracking-wider">
                     <th class="py-3 px-3">Produto</th>
                     <th class="py-3 px-3">Embalagem</th>
-                    <th class="py-3 px-3">Preço Rápido (R$)</th>
-                    <th class="py-3 px-3">Status / Tag (1 Clique)</th>
+                    <th class="py-3 px-3">Preço (R$)</th>
+                    <th class="py-3 px-3">Status / Tag</th>
                     <th class="py-3 px-3 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -586,9 +586,9 @@
             <button
               type="button"
               onclick="saveStoreSettings()"
-              class="bg-leaf-600 hover:bg-leaf-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs"
+              class="bg-leaf-600 hover:bg-leaf-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
-              <span>✓ Salvar Topo & WhatsApp</span>
+              <span>✓ Salvar Configurações</span>
             </button>
           </div>
 
@@ -598,8 +598,8 @@
               <input type="text" id="adminStoreName" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
             </div>
             <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">WhatsApp de Recebimento (com DDD)</label>
-              <input type="text" id="adminWhatsApp" placeholder="5543996025783" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
+              <label class="block text-xs font-semibold text-stone-600 mb-1">WhatsApp de Recebimento</label>
+              <input type="text" id="adminWhatsApp" placeholder="Ex: 5543996025783" class="w-full px-3 py-2 bg-white rounded-xl border border-stone-300 text-sm" />
             </div>
             <div>
               <label class="block text-xs font-semibold text-stone-600 mb-1">Aviso de Entrega no Topo</label>
@@ -612,17 +612,64 @@
     </div>
   </div>
 
-  <!-- TOAST VERDE DISCRETO DE FEEDBACK IMEDIATO -->
+  <!-- TOAST VERDE DISCRETO -->
   <div id="toast" class="fixed top-4 right-4 z-[60] hidden bg-leaf-800 text-white px-4 py-3 rounded-2xl shadow-2xl border border-leaf-500/40 text-xs sm:text-sm font-semibold flex items-center gap-2.5 transition-all">
     <span class="w-5 h-5 rounded-full bg-leaf-500 text-white flex items-center justify-center text-xs font-bold shrink-0">✓</span>
     <span id="toastMessage">Produto atualizado com sucesso!</span>
   </div>
 
-  <!-- SCRIPTS DA APLICAÇÃO -->
-  <script>
-    // =========================================================================
-    // 1. DADOS INICIAIS (POPULADOS CONFORME ESPECIFICAÇÃO)
-    // =========================================================================
+  <!-- SCRIPT FIREBASE E LÓGICA DO APP -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { 
+      getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // CONFIGURAÇÃO CORRIGIDA (Com a vírgula após appId!)
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAw1V0-AuNUGDa5YNju3k_MKwMr9mPns4",
+      authDomain: "catalogo-hortifrutti.firebaseapp.com",
+      projectId: "catalogo-hortifrutti",
+      storageBucket: "catalogo-hortifrutti.firebasestorage.app",
+      messagingSenderId: "6333805103",
+      appId: "1:6333805103:web:0ec66c4aeb6e4349eb4cda",
+      measurementId: "G-3GLX1QT5TQ"
+    };
+
+    const COLLECTION_NAME = 'produtos'; // Nome exato da coleção criada no seu Firestore
+
+    const INITIAL_PRODUCTS = [
+      { id: "prod_1", emoji: "🥬", name: "Chicória orgânica", price: 6.00, unit: "o maço", category: "Folhas & Hortaliças", badge: "Quantidade limitada", image: "" },
+      { id: "prod_2", emoji: "💜", name: "Almeirão roxo orgânico", price: 6.00, unit: "o maço", category: "Folhas & Hortaliças", badge: "Poucas unidades", image: "" },
+      { id: "prod_3", emoji: "🥬", name: "Couve orgânica", price: 6.00, unit: "o maço", category: "Folhas & Hortaliças", badge: "Poucas unidades", image: "" },
+      { id: "prod_4", emoji: "🥬", name: "Serralha orgânica", price: 6.00, unit: "o maço", category: "Folhas & Hortaliças", badge: "", image: "" },
+      { id: "prod_5", emoji: "🩷", name: "Rabanete", price: 5.00, unit: "PCT com 300g", category: "Legumes & Raízes", badge: "", image: "" },
+      { id: "prod_6", emoji: "💜", name: "Repolho roxo", price: 6.00, unit: "unidade", category: "Legumes & Raízes", badge: "Poucas unidades", image: "" },
+      { id: "prod_7", emoji: "🍒", name: "Tomatinho cereja orgânico", price: 10.00, unit: "pct com 500g", category: "Legumes & Raízes", badge: "Quantidade limitada", image: "" },
+      { id: "prod_8", emoji: "🫜", name: "Beterraba orgânica", price: 5.00, unit: "pct com 400g", category: "Legumes & Raízes", badge: "", image: "" },
+      { id: "prod_9", emoji: "💚", name: "Cebolinha orgânica", price: 3.00, unit: "o mç", category: "Temperos & Ervas", badge: "", image: "" },
+      { id: "prod_10", emoji: "💚", name: "Salsinha orgânica", price: 3.00, unit: "o mç", category: "Temperos & Ervas", badge: "", image: "" },
+      { id: "prod_11", emoji: "💚", name: "Hortelã orgânico", price: 4.00, unit: "o mç", category: "Temperos & Ervas", badge: "", image: "" },
+      { id: "prod_12", emoji: "🌿", name: "Alecrim orgânico", price: 4.00, unit: "o mç", category: "Temperos & Ervas", badge: "", image: "" },
+      { id: "prod_13", emoji: "💚", name: "Manjericão orgânico", price: 4.00, unit: "o mç", category: "Temperos & Ervas", badge: "Poucas unidades", image: "" },
+      { id: "prod_14", emoji: "🍎", name: "Vinagre de maçã Orgânico", price: 30.00, unit: "500ml", category: "Mercearia & Empório", badge: "", image: "" },
+      { id: "prod_15", emoji: "☕", name: "Café orgânico torrado em grãos ou moído", price: 40.00, unit: "pct com 250g", category: "Mercearia & Empório", badge: "", image: "" },
+      { id: "prod_16", emoji: "🐝", name: "Mel 260g", price: 25.00, unit: "embalagem com 260g", category: "Mercearia & Empório", badge: "", image: "" },
+      { id: "prod_17", emoji: "🍯", name: "Mel 470g", price: 35.00, unit: "embalagem com 470g", category: "Mercearia & Empório", badge: "", image: "" },
+      { id: "prod_18", emoji: "🍠", name: "Mandioca congelada amarela descascada", price: 8.00, unit: "pct com 1 kg", category: "Legumes & Raízes", badge: "", image: "" },
+      { id: "prod_19", emoji: "🫘", name: "Feijão paquim mineiro", price: 12.00, unit: "pct com 1 kg", category: "Mercearia & Empório", badge: "", image: "" }
+    ];
+
+    let db;
+    let isFirebaseConfigured = false;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      isFirebaseConfigured = true;
+    } catch(e) {
+      console.error("Erro ao iniciar Firebase:", e);
+    }
+
     const DEFAULT_SETTINGS = {
       storeName: 'Horta do Recanto',
       storeSubtitle: 'Direto do produtor para a sua mesa • Colheita fresca',
@@ -630,62 +677,49 @@
       whatsappNumber: '5543996025783'
     };
 
-    const DEFAULT_PRODUCTS = [
-      { id: 1,  name: 'Chicória orgânica', price: 6.00, unit: 'o maço', badge: 'Quantidade limitada', category: 'Folhas & Hortaliças', emoji: '🥬', image: '' },
-      { id: 2,  name: 'Almeirão roxo orgânico', price: 6.00, unit: 'o maço', badge: 'Poucas unidades', category: 'Folhas & Hortaliças', emoji: '🌿', image: '' },
-      { id: 3,  name: 'Couve orgânica', price: 6.00, unit: 'o maço', badge: 'Poucas unidades', category: 'Folhas & Hortaliças', emoji: '🥬', image: '' },
-      { id: 4,  name: 'Serralha orgânica', price: 6.00, unit: 'o maço', badge: '', category: 'Folhas & Hortaliças', emoji: '🌱', image: '' },
-      { id: 5,  name: 'Rabanete', price: 5.00, unit: 'PCT com 300g', badge: '', category: 'Legumes & Raízes', emoji: '🌺', image: '' },
-      { id: 6,  name: 'Repolho roxo', price: 6.00, unit: 'unidade', badge: 'Poucas unidades', category: 'Folhas & Hortaliças', emoji: '🟣', image: '' },
-      { id: 7,  name: 'Tomatinho cereja orgânico', price: 10.00, unit: 'pct com 500g', badge: 'Quantidade limitada', category: 'Legumes & Raízes', emoji: '🍅', image: '' },
-      { id: 8,  name: 'Beterraba orgânica', price: 5.00, unit: 'pct com 400g', badge: '', category: 'Legumes & Raízes', emoji: '🍠', image: '' },
-      { id: 9,  name: 'Cebolinha orgânica', price: 3.00, unit: 'o maço', badge: '', category: 'Temperos & Ervas', emoji: '🌱', image: '' },
-      { id: 10, name: 'Salsinha orgânica', price: 3.00, unit: 'o maço', badge: '', category: 'Temperos & Ervas', emoji: '🌿', image: '' },
-      { id: 11, name: 'Hortelã orgânico', price: 4.00, unit: 'o maço', badge: '', category: 'Temperos & Ervas', emoji: '🍃', image: '' },
-      { id: 12, name: 'Alecrim orgânico', price: 4.00, unit: 'o maço', badge: '', category: 'Temperos & Ervas', emoji: '🌾', image: '' },
-      { id: 13, name: 'Manjericão orgânico', price: 4.00, unit: 'o maço', badge: 'Poucas unidades', category: 'Temperos & Ervas', emoji: '🪴', image: '' },
-      { id: 14, name: 'Vinagre de maçã Orgânico', price: 30.00, unit: '500ml', badge: '', category: 'Mercearia & Empório', emoji: '🍎', image: '' },
-      { id: 15, name: 'Café orgânico (grãos ou moído)', price: 40.00, unit: 'pct com 250g', badge: '', category: 'Mercearia & Empório', emoji: '☕', image: '' },
-      { id: 16, name: 'Mel de abelha (260g)', price: 25.00, unit: 'embalagem com 260g', badge: '', category: 'Mercearia & Empório', emoji: '🍯', image: '' },
-      { id: 17, name: 'Mel de abelha (470g)', price: 35.00, unit: 'embalagem com 470g', badge: '', category: 'Mercearia & Empório', emoji: '🍯', image: '' },
-      { id: 18, name: 'Mandioca congelada amarela descascada e picada', price: 8.00, unit: 'pct com 1 kg', badge: '', category: 'Legumes & Raízes', emoji: '🥔', image: '' },
-      { id: 19, name: 'Feijão paquim mineiro', price: 12.00, unit: 'pct com 1 kg', badge: '', category: 'Mercearia & Empório', emoji: '🫘', image: '' }
-    ];
-
-    const STORAGE_KEYS = {
-      PRODUCTS: 'horta_recanto_products_v1',
-      SETTINGS: 'horta_recanto_settings_v1',
-      CART: 'horta_recanto_cart_v1',
-      CUSTOMER: 'horta_recanto_customer_v1'
-    };
-
-    // Estado da Aplicação
     let products = [];
-    let settings = {};
+    let settings = { ...DEFAULT_SETTINGS };
     let cart = {};
     let activeCategory = 'Todos';
     let searchQuery = '';
     let isAdminAuthenticated = false;
     let lastUpdatedProductId = null;
+    let secretClicks = 0;
 
-    // =========================================================================
-    // 2. INICIALIZAÇÃO & LOCALSTORAGE ROBUSTO
-    // =========================================================================
+    const STORAGE_KEYS = {
+      CART: 'horta_recanto_cart_v2',
+      CUSTOMER: 'horta_recanto_customer_v2'
+    };
+
+    window.secretAdminTrigger = () => {
+      secretClicks++;
+      if (secretClicks >= 5) {
+        secretClicks = 0;
+        document.getElementById('btnOpenAdmin').classList.remove('hidden');
+        window.openAdminModal();
+      }
+    };
+
+    async function seedInitialProductsIfNeeded() {
+      try {
+        const snap = await getDocs(collection(db, COLLECTION_NAME));
+        if (snap.size <= 1) {
+          for (const item of INITIAL_PRODUCTS) {
+            await setDoc(doc(db, COLLECTION_NAME, item.id), {
+              ...item,
+              updatedAt: serverTimestamp()
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("Aviso ao popular itens iniciais:", e);
+      }
+    }
+
     function initApp() {
       try {
-        const savedProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-        const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
         const savedCart = localStorage.getItem(STORAGE_KEYS.CART);
         const savedCustomer = localStorage.getItem(STORAGE_KEYS.CUSTOMER);
-
-        products = savedProducts ? JSON.parse(savedProducts) : [...DEFAULT_PRODUCTS];
-        products = products.map((p, idx) => ({
-          ...p,
-          id: Number(p.id) || (idx + 1),
-          price: Number(p.price) || 0
-        }));
-
-        settings = savedSettings ? { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) } : { ...DEFAULT_SETTINGS };
         cart = savedCart ? JSON.parse(savedCart) : {};
 
         if (savedCustomer) {
@@ -695,39 +729,65 @@
           document.getElementById('customerAddress').value = customer.address || '';
         }
       } catch (err) {
-        console.error('Erro ao ler LocalStorage, usando padrão:', err);
-        products = [...DEFAULT_PRODUCTS];
-        settings = { ...DEFAULT_SETTINGS };
-        cart = {};
+        console.error('Erro ao ler LocalStorage', err);
       }
 
-      applySettingsToUI();
-      renderCategories();
-      renderProducts();
-      updateCartUI();
-      selectBadgePill('');
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === '1' || urlParams.get('admin') === 'true') {
+        document.getElementById('btnOpenAdmin').classList.remove('hidden');
+      }
+
+      if (isFirebaseConfigured) {
+        syncSettings();
+        seedInitialProductsIfNeeded().then(() => {
+          syncProducts();
+        });
+      }
+      
       lucide.createIcons();
+    }
 
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          const editId = document.getElementById('editProductId').value;
-          if (editId) {
-            resetProductForm(true);
-          }
+    function syncSettings() {
+      const settingsRef = doc(db, 'settings', 'store_info');
+      onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+          settings = { ...DEFAULT_SETTINGS, ...docSnap.data() };
+        } else {
+          setDoc(settingsRef, DEFAULT_SETTINGS);
         }
+        applySettingsToUI();
+      }, (error) => console.error("Erro ao ler settings", error));
+    }
+
+    function syncProducts() {
+      const productsCol = collection(db, COLLECTION_NAME);
+      onSnapshot(productsCol, (snapshot) => {
+        const tempProducts = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          tempProducts.push({
+            id: docSnap.id,
+            ...data,
+            price: Number(data.price || 0)
+          });
+        });
+        
+        products = tempProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        document.getElementById('firebaseLoadingState').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+
+        renderCategories();
+        renderProducts();
+        updateCartUI();
+        
+        if(isAdminAuthenticated) {
+          renderAdminProductsTable();
+        }
+      }, (error) => {
+        console.error("Erro ao ler produtos:", error);
+        document.getElementById('firebaseLoadingState').innerHTML = `<p class="text-red-500 font-bold">Erro ao conectar com o banco de dados: ${error.message}</p>`;
       });
-    }
-
-    function saveProductsToStorage() {
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
-    }
-
-    function saveSettingsToStorage() {
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-    }
-
-    function saveCartToStorage() {
-      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
     }
 
     function applySettingsToUI() {
@@ -736,9 +796,10 @@
       document.title = `${settings.storeName} | Catálogo Orgânico`;
     }
 
-    // =========================================================================
-    // 3. FORMATAÇÃO MONETÁRIA (R$) E MÁSCARA DE INPUT RÁPIDA
-    // =========================================================================
+    function saveCartToStorage() {
+      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(cart));
+    }
+
     function formatBRL(value) {
       return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -759,7 +820,6 @@
       return parseFloat(cleaned);
     }
 
-    // Máscara inteligente estilo PDV/Caixa: digitar "600" vira "6,00", "1250" vira "12,50"
     function maskCurrencyInput(inputEl) {
       const digitsOnly = inputEl.value.replace(/\D/g, '');
       if (!digitsOnly) {
@@ -783,64 +843,25 @@
       }, 2800);
     }
 
-    // =========================================================================
-    // 4. CATEGORIAS, BUSCA E LISTAGEM DE PRODUTOS (CATÁLOGO DO CLIENTE)
-    // =========================================================================
     function renderCategories() {
-      const categories = ['Todos', 'Folhas & Hortaliças', 'Legumes & Raízes', 'Temperos & Ervas', 'Mercearia & Empório'];
-      const container = document.getElementById('categoryTabs');
+      const categorySet = new Set(['Todos']);
+      products.forEach(p => { if (p.category) categorySet.add(p.category); });
+      const categories = Array.from(categorySet);
 
+      const container = document.getElementById('categoryTabs');
       container.innerHTML = categories.map(cat => {
         const isActive = cat === activeCategory;
         return `
           <button
-            onclick="setCategory('${cat}')"
-            class="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition ${
-              isActive
-                ? 'bg-leaf-700 text-white shadow-xs'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200/80'
+            onclick="window.setCategory('${cat}')"
+            class="px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold whitespace-nowrap transition cursor-pointer ${
+              isActive ? 'bg-leaf-700 text-white shadow-xs' : 'bg-stone-100 text-stone-600 hover:bg-stone-200/80'
             }"
           >
             ${cat}
           </button>
         `;
       }).join('');
-    }
-
-    function setCategory(category) {
-      activeCategory = category;
-      renderCategories();
-      renderProducts();
-    }
-
-    function handleSearch(value) {
-      searchQuery = value.trim().toLowerCase();
-      const clearBtn = document.getElementById('clearSearchBtn');
-      if (searchQuery.length > 0) {
-        clearBtn.classList.remove('hidden');
-      } else {
-        clearBtn.classList.add('hidden');
-      }
-      renderProducts();
-    }
-
-    function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      activeCategory = 'Todos';
-      handleSearch('');
-      renderCategories();
-    }
-
-    function getBadgeStyle(badgeText) {
-      if (!badgeText) return 'bg-leaf-50 text-leaf-700 border-leaf-200';
-      const lower = badgeText.toLowerCase();
-      if (lower.includes('esgotado')) {
-        return 'bg-stone-200 text-stone-600 border-stone-300';
-      }
-      if (lower.includes('limitada') || lower.includes('poucas')) {
-        return 'bg-amber-100 text-amber-900 border-amber-300';
-      }
-      return 'bg-leaf-100 text-leaf-800 border-leaf-300';
     }
 
     function renderProducts() {
@@ -851,8 +872,8 @@
       const filtered = products.filter(item => {
         const matchesCategory = activeCategory === 'Todos' || item.category === activeCategory;
         const matchesSearch = !searchQuery ||
-          item.name.toLowerCase().includes(searchQuery) ||
-          item.unit.toLowerCase().includes(searchQuery) ||
+          (item.name && item.name.toLowerCase().includes(searchQuery)) ||
+          (item.unit && item.unit.toLowerCase().includes(searchQuery)) ||
           (item.category && item.category.toLowerCase().includes(searchQuery));
         return matchesCategory && matchesSearch;
       });
@@ -920,16 +941,16 @@
                 </span>
               ` : qtyInCart === 0 ? `
                 <button
-                  onclick="changeQty(${product.id}, 1)"
-                  class="bg-leaf-600 hover:bg-leaf-700 active:scale-95 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5"
+                  onclick="window.changeQty('${product.id}', 1)"
+                  class="bg-leaf-600 hover:bg-leaf-700 active:scale-95 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>+ Adicionar</span>
                 </button>
               ` : `
                 <div class="flex items-center bg-leaf-50 border border-leaf-300 rounded-xl p-1 gap-2">
                   <button
-                    onclick="changeQty(${product.id}, -1)"
-                    class="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center shadow-2xs transition"
+                    onclick="window.changeQty('${product.id}', -1)"
+                    class="w-7 h-7 rounded-lg bg-white hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center shadow-2xs transition cursor-pointer"
                   >
                     -
                   </button>
@@ -937,8 +958,8 @@
                     ${qtyInCart}
                   </span>
                   <button
-                    onclick="changeQty(${product.id}, 1)"
-                    class="w-7 h-7 rounded-lg bg-leaf-600 hover:bg-leaf-700 text-white font-bold flex items-center justify-center shadow-2xs transition"
+                    onclick="window.changeQty('${product.id}', 1)"
+                    class="w-7 h-7 rounded-lg bg-leaf-600 hover:bg-leaf-700 text-white font-bold flex items-center justify-center shadow-2xs transition cursor-pointer"
                   >
                     +
                   </button>
@@ -950,19 +971,22 @@
       }).join('');
     }
 
-    // =========================================================================
-    // 5. CARRINHO E PEDIDO VIA WHATSAPP
-    // =========================================================================
+    function getBadgeStyle(badgeText) {
+      if (!badgeText) return 'bg-leaf-50 text-leaf-700 border-leaf-200';
+      const lower = badgeText.toLowerCase();
+      if (lower.includes('esgotado')) return 'bg-stone-200 text-stone-600 border-stone-300';
+      if (lower.includes('limitada') || lower.includes('poucas')) return 'bg-amber-100 text-amber-900 border-amber-300';
+      return 'bg-leaf-100 text-leaf-800 border-leaf-300';
+    }
+
     function changeQty(productId, delta) {
       const current = cart[productId] || 0;
       const next = current + delta;
-
       if (next <= 0) {
         delete cart[productId];
       } else {
         cart[productId] = next;
       }
-
       saveCartToStorage();
       renderProducts();
       updateCartUI();
@@ -987,16 +1011,13 @@
       for (const [idStr, qty] of Object.entries(cart)) {
         const prod = products.find(p => String(p.id) === String(idStr));
         if (prod && qty > 0) {
-          const subtotal = prod.price * qty;
+          const subtotal = Number(prod.price) * qty;
           totalItems += qty;
           totalPrice += subtotal;
-          if (prod.name.toLowerCase().includes('café')) {
-            hasCoffee = true;
-          }
+          if (prod.name.toLowerCase().includes('café')) hasCoffee = true;
           detailedItems.push({ ...prod, qty, subtotal });
         }
       }
-
       return { totalItems, totalPrice, hasCoffee, detailedItems };
     }
 
@@ -1015,12 +1036,7 @@
         floatingBar.classList.add('translate-y-full');
       }
 
-      const coffeeBox = document.getElementById('coffeePreferenceBox');
-      if (hasCoffee) {
-        coffeeBox.classList.remove('hidden');
-      } else {
-        coffeeBox.classList.add('hidden');
-      }
+      document.getElementById('coffeePreferenceBox').classList.toggle('hidden', !hasCoffee);
 
       const container = document.getElementById('cartItemsContainer');
       const checkoutForm = document.getElementById('checkoutFormSection');
@@ -1031,7 +1047,6 @@
           <div class="text-center py-8 text-stone-400">
             <p class="text-3xl mb-2">🧺</p>
             <p class="text-sm font-medium text-stone-600">Seu cesto ainda está vazio.</p>
-            <p class="text-xs text-stone-400 mt-0.5">Adicione seus orgânicos favoritos na tela inicial!</p>
           </div>
         `;
         checkoutForm.classList.add('hidden');
@@ -1051,13 +1066,12 @@
                 <p class="text-[11px] text-stone-500">${item.unit} • ${formatBRL(item.price)} un.</p>
               </div>
             </div>
-
             <div class="flex items-center gap-3 shrink-0">
               <span class="text-xs sm:text-sm font-bold text-leaf-800">${formatBRL(item.subtotal)}</span>
               <div class="flex items-center bg-stone-100 rounded-lg p-0.5 gap-1.5">
-                <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded-md bg-white text-stone-700 font-bold text-xs shadow-2xs">-</button>
+                <button onclick="window.changeQty('${item.id}', -1)" class="w-6 h-6 rounded-md bg-white text-stone-700 font-bold shadow-2xs">-</button>
                 <span class="text-xs font-bold w-5 text-center">${item.qty}</span>
-                <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded-md bg-leaf-600 text-white font-bold text-xs shadow-2xs">+</button>
+                <button onclick="window.changeQty('${item.id}', 1)" class="w-6 h-6 rounded-md bg-leaf-600 text-white font-bold shadow-2xs">+</button>
               </div>
             </div>
           </div>
@@ -1065,39 +1079,17 @@
       }
     }
 
-    function openCartModal() {
-      updateCartUI();
-      document.getElementById('cartModal').classList.remove('hidden');
-    }
-
-    function closeCartModal() {
-      document.getElementById('cartModal').classList.add('hidden');
-    }
-
     function sendOrderToWhatsApp() {
       const { detailedItems, totalPrice, hasCoffee } = getCartSummary();
       if (detailedItems.length === 0) return;
 
-      const nameInput = document.getElementById('customerName');
-      const neighborhoodInput = document.getElementById('customerNeighborhood');
-      const addressInput = document.getElementById('customerAddress');
-      const paymentInput = document.getElementById('customerPayment');
+      const name = document.getElementById('customerName').value.trim();
+      const neighborhood = document.getElementById('customerNeighborhood').value.trim();
+      const address = document.getElementById('customerAddress').value.trim();
+      const payment = document.getElementById('customerPayment').value;
 
-      const name = nameInput.value.trim();
-      const neighborhood = neighborhoodInput.value.trim();
-      const address = addressInput.value.trim();
-      const payment = paymentInput.value;
-
-      if (!name) {
-        nameInput.focus();
-        showToast('Por favor, informe seu nome para o pedido.');
-        return;
-      }
-      if (!neighborhood) {
-        neighborhoodInput.focus();
-        showToast('Por favor, informe seu bairro para entrega.');
-        return;
-      }
+      if (!name) { showToast('Informe seu nome para o pedido.'); return; }
+      if (!neighborhood) { showToast('Informe seu bairro para entrega.'); return; }
 
       localStorage.setItem(STORAGE_KEYS.CUSTOMER, JSON.stringify({ name, neighborhood, address }));
 
@@ -1126,94 +1118,174 @@
       lines.push(``);
       lines.push(`_Pedido enviado pelo Catálogo Digital_`);
 
-      const cleanPhone = (settings.whatsappNumber || '5543996025783').replace(/\D/g, '');
+      let cleanPhone = (settings.whatsappNumber || '5543996025783').replace(/\D/g, '');
+      if (cleanPhone.length === 10 || cleanPhone.length === 11) {
+        cleanPhone = '55' + cleanPhone;
+      }
+
       const encodedText = encodeURIComponent(lines.join('\n'));
       const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedText}`;
-
       window.open(whatsappUrl, '_blank');
     }
 
-    // =========================================================================
-    // 6. PAINEL ADMINISTRATIVO FLUÍDO (EDIÇÃO VINCULADA, SCROLL SUAVE, INLINE)
-    // =========================================================================
-    function openAdminModal() {
-      document.getElementById('adminModal').classList.remove('hidden');
-      if (isAdminAuthenticated) {
-        showAdminContent();
-      } else {
-        document.getElementById('adminLoginSection').classList.remove('hidden');
-        document.getElementById('adminContentSection').classList.add('hidden');
-        document.getElementById('adminPasswordInput').value = '';
-        setTimeout(() => document.getElementById('adminPasswordInput').focus(), 50);
+    function setAdminLoading(isLoading) {
+      const overlay = document.getElementById('adminLoadingOverlay');
+      if(isLoading) overlay.classList.remove('hidden');
+      else overlay.classList.add('hidden');
+    }
+
+    async function saveStoreSettings() {
+      const storeName = document.getElementById('adminStoreName').value.trim();
+      const whatsappNumber = document.getElementById('adminWhatsApp').value.trim();
+      const bannerNotice = document.getElementById('adminBannerNotice').value.trim();
+
+      setAdminLoading(true);
+      try {
+        await setDoc(doc(db, 'settings', 'store_info'), {
+          storeName, whatsappNumber, bannerNotice
+        }, { merge: true });
+        showToast('Configurações salvas no Firestore!');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao salvar configurações.');
       }
+      setAdminLoading(false);
     }
 
-    function closeAdminModal() {
-      document.getElementById('adminModal').classList.add('hidden');
-    }
+    async function saveProductFromForm() {
+      const editId = document.getElementById('editProductId').value.trim();
+      const emoji = document.getElementById('prodEmoji').value.trim() || '🥬';
+      const name = document.getElementById('prodName').value.trim();
+      const price = parsePriceMaskToNumber(document.getElementById('prodPrice').value);
+      const unit = document.getElementById('prodUnit').value.trim();
+      const category = document.getElementById('prodCategory').value;
+      const badge = document.getElementById('prodBadge').value;
+      const image = document.getElementById('prodImage').value.trim();
 
-    function verifyAdminPassword() {
-      const pwd = document.getElementById('adminPasswordInput').value.trim();
-      const err = document.getElementById('adminLoginError');
-      if (pwd === '1234' || pwd.toLowerCase() === 'admin') {
-        isAdminAuthenticated = true;
-        err.classList.add('hidden');
-        showAdminContent();
-      } else {
-        err.classList.remove('hidden');
-      }
-    }
+      if (!name) { document.getElementById('prodName').focus(); return showToast('Informe o nome!'); }
+      if (isNaN(price) || price < 0) { document.getElementById('prodPrice').focus(); return showToast('Preço inválido!'); }
+      if (!unit) { document.getElementById('prodUnit').focus(); return showToast('Informe a embalagem!'); }
 
-    function showAdminContent() {
-      document.getElementById('adminLoginSection').classList.add('hidden');
-      document.getElementById('adminContentSection').classList.remove('hidden');
-
-      document.getElementById('adminStoreName').value = settings.storeName;
-      document.getElementById('adminWhatsApp').value = settings.whatsappNumber;
-      document.getElementById('adminBannerNotice').value = settings.bannerNotice;
-
-      renderAdminProductsTable();
-    }
-
-    function saveStoreSettings() {
-      settings.storeName = document.getElementById('adminStoreName').value.trim() || DEFAULT_SETTINGS.storeName;
-      settings.whatsappNumber = document.getElementById('adminWhatsApp').value.trim() || DEFAULT_SETTINGS.whatsappNumber;
-      settings.bannerNotice = document.getElementById('adminBannerNotice').value.trim() || DEFAULT_SETTINGS.bannerNotice;
-
-      saveSettingsToStorage();
-      applySettingsToUI();
-      showToast('Configurações e aviso de entrega salvos!');
-    }
-
-    function setEmoji(emoji) {
-      document.getElementById('prodEmoji').value = emoji;
-    }
-
-    function setUnitQuick(unitText) {
-      document.getElementById('prodUnit').value = unitText;
-    }
-
-    function selectBadgePill(badgeValue) {
-      document.getElementById('prodBadge').value = badgeValue;
-      const pills = document.querySelectorAll('#badgeQuickButtons .badge-pill');
-      pills.forEach(btn => {
-        const val = btn.getAttribute('data-badge');
-        if (val === badgeValue) {
-          btn.className = 'badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border-2 border-leaf-700 bg-leaf-700 text-white shadow-2xs transition scale-[1.03]';
+      setAdminLoading(true);
+      try {
+        const productData = { emoji, name, price, unit, category, badge, image, updatedAt: serverTimestamp() };
+        
+        if (editId) {
+          await updateDoc(doc(db, COLLECTION_NAME, editId), productData);
+          lastUpdatedProductId = editId;
+          showToast('Produto atualizado no Firestore!');
+          resetProductForm(false);
         } else {
-          btn.className = 'badge-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 transition';
+          const newDocRef = doc(collection(db, COLLECTION_NAME));
+          await setDoc(newDocRef, productData);
+          lastUpdatedProductId = newDocRef.id;
+          showToast('Novo produto cadastrado no Firestore!');
+          resetProductForm(false);
         }
-      });
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao salvar produto.');
+      }
+      setAdminLoading(false);
     }
 
-    function handleFormKeydown(event) {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        saveProductFromForm(false);
+    async function quickUpdatePrice(productId, maskedValue) {
+      const parsed = parsePriceMaskToNumber(maskedValue);
+      if (isNaN(parsed) || parsed < 0) {
+        renderAdminProductsTable();
+        return;
+      }
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, productId), { price: parsed, updatedAt: serverTimestamp() });
+        lastUpdatedProductId = productId;
+        showToast(`Preço atualizado em tempo real!`);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao atualizar preço rápido.');
       }
     }
 
-    // Renderização da Tabela com Edição Rápida Inline + Destaque da Linha em Edição
+    async function quickUpdateBadge(productId, newBadge) {
+      try {
+        await updateDoc(doc(db, COLLECTION_NAME, productId), { badge: newBadge, updatedAt: serverTimestamp() });
+        lastUpdatedProductId = productId;
+        showToast(`Status alterado no Firebase!`);
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao atualizar status.');
+      }
+    }
+
+    async function deleteProduct(productId) {
+      if(!confirm("Tem certeza que deseja excluir permanentemente este produto do banco de dados?")) return;
+      setAdminLoading(true);
+      try {
+        await deleteDoc(doc(db, COLLECTION_NAME, productId));
+        if (cart[productId]) {
+          delete cart[productId];
+          saveCartToStorage();
+        }
+        showToast('Produto excluído!');
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao excluir produto.');
+      }
+      setAdminLoading(false);
+    }
+
+    function editProduct(id) {
+      const prod = products.find(p => String(p.id) === String(id));
+      if (!prod) return;
+
+      document.getElementById('editProductId').value = prod.id;
+      document.getElementById('prodEmoji').value = prod.emoji || '🥬';
+      document.getElementById('prodName').value = prod.name || '';
+      document.getElementById('prodPrice').value = numberToPriceMask(prod.price);
+      document.getElementById('prodUnit').value = prod.unit || '';
+      document.getElementById('prodCategory').value = prod.category || 'Folhas & Hortaliças';
+      document.getElementById('prodImage').value = prod.image || '';
+      window.selectBadgePill(prod.badge || '');
+
+      const formContainer = document.getElementById('adminFormContainer');
+      formContainer.className = 'bg-amber-50/90 p-4 sm:p-5 rounded-2xl border-2 border-amber-400 ring-4 ring-amber-400/15 transition-all duration-300 space-y-4 shadow-md animate-form-focus';
+
+      document.getElementById('formModeBadge').className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-stone-950 flex items-center gap-1.5';
+      document.getElementById('formModeBadge').innerHTML = `✏️ Editando Produto`;
+      document.getElementById('productFormTitle').textContent = prod.name;
+      document.getElementById('saveProductBtnLabel').textContent = 'Salvar Alterações';
+
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      document.getElementById('adminContentSection').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetProductForm(restoreTableScroll = false) {
+      const previousEditId = document.getElementById('editProductId').value;
+      
+      document.getElementById('editProductId').value = '';
+      document.getElementById('prodEmoji').value = '';
+      document.getElementById('prodName').value = '';
+      document.getElementById('prodPrice').value = '';
+      document.getElementById('prodUnit').value = '';
+      document.getElementById('prodImage').value = '';
+      window.selectBadgePill('');
+
+      const formContainer = document.getElementById('adminFormContainer');
+      formContainer.className = 'bg-leaf-50/70 p-4 sm:p-5 rounded-2xl border-2 border-leaf-200 transition-all duration-300 space-y-4 shadow-xs';
+
+      document.getElementById('formModeBadge').className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-leaf-700 text-white flex items-center gap-1.5';
+      document.getElementById('formModeBadge').innerHTML = `➕ Novo Produto`;
+      document.getElementById('productFormTitle').textContent = 'Adicionar item ao catálogo';
+      document.getElementById('saveProductBtnLabel').textContent = 'Adicionar Produto no Firebase';
+      
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+      renderAdminProductsTable();
+      
+      if (restoreTableScroll && previousEditId) {
+        const row = document.getElementById(`admin-row-${previousEditId}`);
+        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
     function renderAdminProductsTable() {
       const tbody = document.getElementById('adminProductsTableBody');
       const currentEditId = document.getElementById('editProductId').value;
@@ -1223,8 +1295,8 @@
 
       const filteredAdminProducts = products.filter(p => {
         if (!filterText) return true;
-        return p.name.toLowerCase().includes(filterText) ||
-               p.unit.toLowerCase().includes(filterText) ||
+        return (p.name && p.name.toLowerCase().includes(filterText)) ||
+               (p.unit && p.unit.toLowerCase().includes(filterText)) ||
                (p.category && p.category.toLowerCase().includes(filterText));
       });
 
@@ -1236,14 +1308,11 @@
           <tr
             id="admin-row-${prod.id}"
             class="transition-colors ${
-              isBeingEdited
-                ? 'bg-amber-50/90 ring-2 ring-inset ring-amber-400'
-                : wasRecentlySaved
-                  ? 'animate-row-saved'
-                  : 'hover:bg-stone-50'
+              isBeingEdited ? 'bg-amber-50/90 ring-2 ring-inset ring-amber-400'
+              : wasRecentlySaved ? 'animate-row-saved'
+              : 'hover:bg-stone-50'
             }"
           >
-            <!-- Produto -->
             <td class="py-2.5 px-3">
               <div class="flex items-center gap-2.5">
                 <span class="text-xl w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center shrink-0">${prod.emoji || '🥬'}</span>
@@ -1257,12 +1326,10 @@
               </div>
             </td>
 
-            <!-- Embalagem -->
             <td class="py-2.5 px-3 text-stone-600 font-medium whitespace-nowrap">
               ${prod.unit}
             </td>
 
-            <!-- Preço Rápido Inline (Com máscara R$ instantânea) -->
             <td class="py-2.5 px-3 whitespace-nowrap">
               <div class="inline-flex items-center bg-stone-50 focus-within:bg-white border border-stone-300 focus-within:border-leaf-600 rounded-lg px-2 py-1 w-28">
                 <span class="text-[11px] font-bold text-stone-400 mr-1">R$</span>
@@ -1270,81 +1337,29 @@
                   type="text"
                   inputmode="decimal"
                   value="${numberToPriceMask(prod.price)}"
-                  oninput="maskCurrencyInput(this)"
+                  oninput="window.maskCurrencyInput(this)"
                   onfocus="this.select()"
-                  onchange="quickUpdatePrice(${prod.id}, this.value)"
+                  onchange="window.quickUpdatePrice('${prod.id}', this.value)"
                   onkeydown="if(event.key==='Enter'){ this.blur(); }"
                   class="w-full bg-transparent text-xs sm:text-sm font-bold text-leaf-900 outline-none text-right"
-                  title="Altere o valor e pressione Enter para salvar na hora"
                 />
               </div>
             </td>
 
-            <!-- Troca Rápida de Status/Tag em 1 Clique -->
             <td class="py-2.5 px-3 whitespace-nowrap">
               <div class="inline-flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onclick="quickUpdateBadge(${prod.id}, '')"
-                  class="px-2 py-1 rounded-lg text-[11px] font-bold transition ${
-                    !prod.badge ? 'bg-leaf-600 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'
-                  }"
-                  title="Disponível normal"
-                >
-                  Disponível
-                </button>
-                <button
-                  type="button"
-                  onclick="quickUpdateBadge(${prod.id}, 'Poucas unidades')"
-                  class="px-2 py-1 rounded-lg text-[11px] font-bold transition ${
-                    prod.badge === 'Poucas unidades' ? 'bg-amber-400 text-stone-950 shadow-2xs' : 'text-stone-500 hover:text-stone-800'
-                  }"
-                  title="Marcar como Poucas unidades"
-                >
-                  Poucas un.
-                </button>
-                <button
-                  type="button"
-                  onclick="quickUpdateBadge(${prod.id}, 'Quantidade limitada')"
-                  class="px-2 py-1 rounded-lg text-[11px] font-bold transition ${
-                    prod.badge === 'Quantidade limitada' ? 'bg-amber-500 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'
-                  }"
-                  title="Marcar como Quantidade limitada"
-                >
-                  Limitada
-                </button>
-                <button
-                  type="button"
-                  onclick="quickUpdateBadge(${prod.id}, 'Esgotado')"
-                  class="px-2 py-1 rounded-lg text-[11px] font-bold transition ${
-                    prod.badge === 'Esgotado' ? 'bg-stone-700 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'
-                  }"
-                  title="Marcar como Esgotado"
-                >
-                  Esgotado
-                </button>
+                <button type="button" onclick="window.quickUpdateBadge('${prod.id}', '')" class="px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${!prod.badge ? 'bg-leaf-600 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'}">Disponível</button>
+                <button type="button" onclick="window.quickUpdateBadge('${prod.id}', 'Poucas unidades')" class="px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${prod.badge === 'Poucas unidades' ? 'bg-amber-400 text-stone-950 shadow-2xs' : 'text-stone-500 hover:text-stone-800'}">Poucas un.</button>
+                <button type="button" onclick="window.quickUpdateBadge('${prod.id}', 'Quantidade limitada')" class="px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${prod.badge === 'Quantidade limitada' ? 'bg-amber-500 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'}">Limitada</button>
+                <button type="button" onclick="window.quickUpdateBadge('${prod.id}', 'Esgotado')" class="px-2 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${prod.badge === 'Esgotado' ? 'bg-stone-700 text-white shadow-2xs' : 'text-stone-500 hover:text-stone-800'}">Esgotado</button>
               </div>
             </td>
 
-            <!-- Ações -->
             <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
-              <button
-                type="button"
-                onclick="editProduct(${prod.id})"
-                class="px-3 py-1.5 ${
-                  isBeingEdited
-                    ? 'bg-amber-500 text-stone-950 font-bold'
-                    : 'bg-leaf-50 hover:bg-leaf-100 text-leaf-800 font-semibold border border-leaf-200'
-                } rounded-xl text-xs transition inline-flex items-center gap-1"
-              >
+              <button type="button" onclick="window.editProduct('${prod.id}')" class="px-3 py-1.5 cursor-pointer ${isBeingEdited ? 'bg-amber-500 text-stone-950 font-bold' : 'bg-leaf-50 hover:bg-leaf-100 text-leaf-800 font-semibold border border-leaf-200'} rounded-xl text-xs transition inline-flex items-center gap-1">
                 <span>✏️ Editar</span>
               </button>
-              <button
-                type="button"
-                onclick="deleteProduct(${prod.id})"
-                class="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition"
-                title="Excluir produto"
-              >
+              <button type="button" onclick="window.deleteProduct('${prod.id}')" class="px-2.5 py-1.5 cursor-pointer bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition">
                 🗑️
               </button>
             </td>
@@ -1353,237 +1368,84 @@
       }).join('');
     }
 
-    // Atualização rápida de preço direto na linha da tabela
-    function quickUpdatePrice(productId, maskedValue) {
-      const parsed = parsePriceMaskToNumber(maskedValue);
-      if (isNaN(parsed) || parsed < 0) {
-        renderAdminProductsTable();
-        return;
-      }
-      const idx = products.findIndex(p => String(p.id) === String(productId));
-      if (idx === -1) return;
-
-      products[idx].price = parsed;
-      lastUpdatedProductId = products[idx].id;
-      saveProductsToStorage();
+    window.setCategory = (cat) => { activeCategory = cat; renderCategories(); renderProducts(); };
+    window.handleSearch = (val) => {
+      searchQuery = val.trim().toLowerCase();
+      document.getElementById('clearSearchBtn').classList.toggle('hidden', searchQuery.length === 0);
       renderProducts();
-      updateCartUI();
-      renderAdminProductsTable();
-      showToast(`Preço de "${products[idx].name}" atualizado para ${formatBRL(parsed)}!`);
-    }
-
-    // Atualização rápida de Tag com 1 clique direto na linha da tabela
-    function quickUpdateBadge(productId, newBadge) {
-      const idx = products.findIndex(p => String(p.id) === String(productId));
-      if (idx === -1) return;
-
-      products[idx].badge = newBadge;
-      lastUpdatedProductId = products[idx].id;
-
-      if (String(document.getElementById('editProductId').value) === String(productId)) {
-        selectBadgePill(newBadge);
-      }
-
-      saveProductsToStorage();
-      renderProducts();
-      updateCartUI();
-      renderAdminProductsTable();
-      showToast(`Status de "${products[idx].name}" alterado para ${newBadge || 'Disponível'}!`);
-    }
-
-    // CARREGA DADOS NO FORMULÁRIO E ROLA SUAVEMENTE PARA O TOPO EM FOCO TOTAL
-    function editProduct(id) {
-      const prod = products.find(p => String(p.id) === String(id));
-      if (!prod) {
-        showToast('Erro: Produto não encontrado.');
-        return;
-      }
-
-      // 1. Vincula todos os campos com precisão
-      document.getElementById('editProductId').value = String(prod.id);
-      document.getElementById('prodEmoji').value = prod.emoji || '🥬';
-      document.getElementById('prodName').value = prod.name || '';
-      document.getElementById('prodPrice').value = numberToPriceMask(prod.price);
-      document.getElementById('prodUnit').value = prod.unit || '';
-      document.getElementById('prodCategory').value = prod.category || 'Folhas & Hortaliças';
-      document.getElementById('prodImage').value = prod.image || '';
-      selectBadgePill(prod.badge || '');
-
-      // 2. Muda visual do card do formulário para destacar claramente o Modo de Edição
-      const formContainer = document.getElementById('adminFormContainer');
-      formContainer.className = 'bg-amber-50/90 p-4 sm:p-5 rounded-2xl border-2 border-amber-400 ring-4 ring-amber-400/15 transition-all duration-300 space-y-4 shadow-md animate-form-focus';
-
-      document.getElementById('formModeBadge').className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-stone-950 flex items-center gap-1.5';
-      document.getElementById('formModeBadge').innerHTML = `✏️ Editando #${prod.id}`;
-      document.getElementById('productFormTitle').textContent = prod.name;
-      document.getElementById('saveProductBtnLabel').textContent = 'Atualizar Produto';
-
-      document.getElementById('cancelEditBtn').classList.remove('hidden');
-      document.getElementById('saveAndNextBtn').classList.remove('hidden');
-
-      renderAdminProductsTable();
-
-      // 3. Scroll suave automático para o topo do Painel Admin e foco imediato no campo Nome
-      const adminScrollContainer = document.getElementById('adminContentSection');
-      adminScrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-
-      setTimeout(() => {
-        const nameInput = document.getElementById('prodName');
-        nameInput.focus();
-        nameInput.select();
-      }, 220);
-    }
-
-    // SALVA OU ATUALIZA O PRODUTO DO FORMULÁRIO
-    function saveProductFromForm(editNextAfterSave = false) {
-      const editId = document.getElementById('editProductId').value.trim();
-      const emoji = document.getElementById('prodEmoji').value.trim() || '🥬';
-      const name = document.getElementById('prodName').value.trim();
-      const price = parsePriceMaskToNumber(document.getElementById('prodPrice').value);
-      const unit = document.getElementById('prodUnit').value.trim();
-      const category = document.getElementById('prodCategory').value;
-      const badge = document.getElementById('prodBadge').value;
-      const image = document.getElementById('prodImage').value.trim();
-
-      if (!name) {
-        document.getElementById('prodName').focus();
-        showToast('Informe o nome do produto!');
-        return;
-      }
-      if (isNaN(price) || price < 0) {
-        document.getElementById('prodPrice').focus();
-        showToast('Informe um preço válido em R$!');
-        return;
-      }
-      if (!unit) {
-        document.getElementById('prodUnit').focus();
-        showToast('Informe a embalagem/unidade (ex: o maço)!');
-        return;
-      }
-
-      if (editId !== '') {
-        // Modo Atualização
-        const index = products.findIndex(p => String(p.id) === String(editId));
-        if (index !== -1) {
-          const updatedId = products[index].id;
-          products[index] = {
-            ...products[index],
-            id: updatedId,
-            emoji,
-            name,
-            price,
-            unit,
-            category,
-            badge,
-            image
-          };
-          lastUpdatedProductId = updatedId;
-
-          saveProductsToStorage();
-          renderProducts();
-          updateCartUI();
-          showToast('Produto atualizado com sucesso!');
-
-          // Se clicou em "Salvar e Editar Próximo", carrega o próximo item da lista
-          if (editNextAfterSave && products.length > 1) {
-            const nextIndex = (index + 1) % products.length;
-            editProduct(products[nextIndex].id);
-            return;
-          }
-
-          // Caso contrário, sai do modo de edição de forma limpa e destaca a linha atualizada na tabela
-          resetProductForm(false);
-          renderAdminProductsTable();
-
-          setTimeout(() => {
-            const updatedRow = document.getElementById(`admin-row-${updatedId}`);
-            if (updatedRow) {
-              updatedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-          }, 100);
-          return;
+    };
+    window.clearSearch = () => { document.getElementById('searchInput').value = ''; window.handleSearch(''); };
+    window.changeQty = changeQty;
+    window.clearCart = clearCart;
+    window.sendOrderToWhatsApp = sendOrderToWhatsApp;
+    window.openCartModal = () => { updateCartUI(); document.getElementById('cartModal').classList.remove('hidden'); };
+    window.closeCartModal = () => document.getElementById('cartModal').classList.add('hidden');
+    
+    window.maskCurrencyInput = maskCurrencyInput;
+    window.setEmoji = (emoji) => document.getElementById('prodEmoji').value = emoji;
+    window.setUnitQuick = (unitText) => document.getElementById('prodUnit').value = unitText;
+    window.selectBadgePill = (badgeValue) => {
+      document.getElementById('prodBadge').value = badgeValue;
+      document.querySelectorAll('#badgeQuickButtons .badge-pill').forEach(btn => {
+        if (btn.getAttribute('data-badge') === badgeValue) {
+          btn.className = 'badge-pill px-2.5 py-1.5 rounded-xl text-xs font-bold border-2 border-leaf-700 bg-leaf-700 text-white shadow-2xs transition scale-[1.03]';
+        } else {
+          btn.className = 'badge-pill px-2.5 py-1.5 rounded-xl text-xs font-semibold border border-stone-300 bg-white text-stone-700 hover:bg-stone-100 transition';
         }
+      });
+    };
+    window.handleFormKeydown = (event) => { if (event.key === 'Enter') { event.preventDefault(); saveProductFromForm(); } };
+
+    window.openAdminModal = () => {
+      document.getElementById('adminModal').classList.remove('hidden');
+      if (isAdminAuthenticated) {
+        showAdminContent();
+      } else {
+        document.getElementById('adminLoginSection').classList.remove('hidden');
+        document.getElementById('adminContentSection').classList.add('hidden');
+        setTimeout(() => document.getElementById('adminPasswordInput').focus(), 50);
       }
-
-      // Modo Adição de Novo Produto
-      const newId = products.length > 0 ? Math.max(...products.map(p => Number(p.id) || 0)) + 1 : 1;
-      const newProd = { id: newId, emoji, name, price, unit, category, badge, image };
-      products.unshift(newProd);
-      lastUpdatedProductId = newId;
-
-      saveProductsToStorage();
-      resetProductForm(false);
-      renderAdminProductsTable();
-      renderProducts();
-      updateCartUI();
-      showToast('Novo produto adicionado ao catálogo!');
-    }
-
-    function resetProductForm(restoreTableScroll = false) {
-      const previousEditId = document.getElementById('editProductId').value;
-
-      document.getElementById('editProductId').value = '';
-      document.getElementById('prodEmoji').value = '';
-      document.getElementById('prodName').value = '';
-      document.getElementById('prodPrice').value = '';
-      document.getElementById('prodUnit').value = '';
-      document.getElementById('prodImage').value = '';
-      selectBadgePill('');
-
-      const formContainer = document.getElementById('adminFormContainer');
-      formContainer.className = 'bg-leaf-50/70 p-4 sm:p-5 rounded-2xl border-2 border-leaf-200 transition-all duration-300 space-y-4 shadow-xs';
-
-      document.getElementById('formModeBadge').className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-leaf-700 text-white flex items-center gap-1.5';
-      document.getElementById('formModeBadge').innerHTML = `➕ Novo Produto`;
-      document.getElementById('productFormTitle').textContent = 'Adicionar item ao catálogo';
-      document.getElementById('saveProductBtnLabel').textContent = 'Adicionar Produto';
-
-      document.getElementById('cancelEditBtn').classList.add('hidden');
-      document.getElementById('saveAndNextBtn').classList.add('hidden');
-
-      renderAdminProductsTable();
-
-      if (restoreTableScroll && previousEditId) {
-        const row = document.getElementById(`admin-row-${previousEditId}`);
-        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
+    window.closeAdminModal = () => document.getElementById('adminModal').classList.add('hidden');
+    window.verifyAdminPassword = () => {
+      const pwd = document.getElementById('adminPasswordInput').value.trim();
+      const err = document.getElementById('adminLoginError');
+      if (pwd === '1234' || pwd.toLowerCase() === 'admin') {
+        isAdminAuthenticated = true;
+        err.classList.add('hidden');
+        showAdminContent();
+      } else {
+        err.classList.remove('hidden');
       }
-    }
-
-    function deleteProduct(id) {
-      const prod = products.find(p => String(p.id) === String(id));
-      if (!prod) return;
-      if (!confirm(`Remover "${prod.name}" do catálogo?`)) return;
-
-      products = products.filter(p => String(p.id) !== String(id));
-      delete cart[id];
-
-      if (String(document.getElementById('editProductId').value) === String(id)) {
-        resetProductForm(false);
-      }
-
-      saveProductsToStorage();
-      saveCartToStorage();
+    };
+    
+    function showAdminContent() {
+      document.getElementById('adminLoginSection').classList.add('hidden');
+      document.getElementById('adminContentSection').classList.remove('hidden');
+      document.getElementById('adminStoreName').value = settings.storeName;
+      document.getElementById('adminWhatsApp').value = settings.whatsappNumber;
+      document.getElementById('adminBannerNotice').value = settings.bannerNotice;
       renderAdminProductsTable();
-      renderProducts();
-      updateCartUI();
-      showToast(`"${prod.name}" removido.`);
     }
 
-    function resetCatalogToDefaults() {
-      if (!confirm('Deseja restaurar a lista inicial de 19 produtos orgânicos?')) return;
-      products = [...DEFAULT_PRODUCTS];
-      settings = { ...DEFAULT_SETTINGS };
-      saveProductsToStorage();
-      saveSettingsToStorage();
-      resetProductForm(false);
-      applySettingsToUI();
-      showAdminContent();
-      renderProducts();
-      updateCartUI();
-      showToast('Catálogo original restaurado com sucesso!');
-    }
+    window.saveStoreSettings = saveStoreSettings;
+    window.saveProductFromForm = saveProductFromForm;
+    window.resetProductForm = resetProductForm;
+    window.editProduct = editProduct;
+    window.deleteProduct = deleteProduct;
+    window.quickUpdatePrice = quickUpdatePrice;
+    window.quickUpdateBadge = quickUpdateBadge;
+    window.renderAdminProductsTable = renderAdminProductsTable;
 
-    window.addEventListener('DOMContentLoaded', initApp);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if(document.getElementById('editProductId').value) resetProductForm(true);
+        window.closeAdminModal();
+        window.closeCartModal();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
 </html>
